@@ -6,9 +6,12 @@ import no.cantara.realestate.cloudconnector.notifications.NotificationService;
 import no.cantara.realestate.cloudconnector.notifications.SlackNotificationService;
 import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMessageRouter;
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
-import no.cantara.realestate.cloudconnector.routing.ObservationReceiver;
+import no.cantara.realestate.cloudconnector.routing.ObservationDistributor;
+import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
+import no.cantara.realestate.mappingtable.repository.MappedIdRepository;
+import no.cantara.realestate.mappingtable.repository.MappedIdRepositoryImpl;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.stingray.application.AbstractStingrayApplication;
@@ -28,7 +31,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private Map<String, DistributionService> distributionServices;
 
     private Map<String, IngestionService> ingestionServices;
-    private ObservationReceiver observationReceiver;
+    private ObservationsRepository observationsRepository;
 
     public RealestateCloudconnectorApplication(ApplicationProperties config) {
         super("RealestateCloudconnector",
@@ -74,7 +77,12 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         initIngestionController();
         subscribeToSimulatedSensors();
         initRouter();
+        MappedIdRepository mappedIdRepository = new MappedIdRepositoryImpl();
 
+        ObservationDistributor observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository);
+        Thread t = new Thread(observationDistributor);
+        t.start();
+        log.trace("Started ObservationDistributor thread");
         /*
         boolean doImportData = config.asBoolean("import.data");
         enableStream = config.asBoolean("sd.stream.enabled");
@@ -138,7 +146,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         for (IngestionService ingestionService : ingestionServices.values()) {
             ingestors.add(ingestionService);
         }
-        MessageRouter messageRouter = new ScheduledObservationMessageRouter(config, ingestors, observationReceiver);
+        MessageRouter messageRouter = new ScheduledObservationMessageRouter(config, ingestors, observationsRepository);
         messageRouter.start();
     }
 
@@ -182,11 +190,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         }
     }
     private void initObservationReceiver() {
-        observationReceiver = new ObservationReceiver();
-        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-isHealthy: ", observationReceiver::isHealthy);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-ObservedValues-received: ", observationReceiver::getObservedValueCount);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-ConfigValues-received: ", observationReceiver::getObservedConfigValueCount);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-ConfigMessages-received: ", observationReceiver::getObservedConfigMessageCount);
+        observationsRepository = new ObservationsRepository();
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-isHealthy: ", observationsRepository::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-received: ", observationsRepository::getObservedValueCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigValues-received: ", observationsRepository::getObservedConfigValueCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigMessages-received: ", observationsRepository::getObservedConfigMessageCount);
     }
 
 
