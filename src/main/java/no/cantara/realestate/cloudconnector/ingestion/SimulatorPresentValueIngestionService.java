@@ -41,19 +41,23 @@ public class SimulatorPresentValueIngestionService implements PresentValueIngest
 
     @Override
     public void addSubscriptions(List<SensorId> list) {
-
+        sensorIds.addAll(list);
     }
 
     @Override
     public void addSubscription(SensorId sensorId) {
-
+        sensorIds.add(sensorId);
     }
 
     @Override
     public void removeSubscription(SensorId sensorId) {
-
+        sensorIds.remove(sensorId);
     }
 
+    @Override
+    public long getSubscriptionsCount() {
+        return sensorIds.size();
+    }
 
     @Override
     public boolean isInitialized() {

@@ -1,11 +1,14 @@
 package no.cantara.realestate.cloudconnector;
 
 import no.cantara.config.ApplicationProperties;
+import no.cantara.realestate.SensorId;
 import no.cantara.realestate.cloudconnector.notifications.NotificationService;
 import no.cantara.realestate.cloudconnector.notifications.SlackNotificationService;
 import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMessageRouter;
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
 import no.cantara.realestate.cloudconnector.routing.ObservationReceiver;
+import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
+import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.stingray.application.AbstractStingrayApplication;
@@ -69,6 +72,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         initObservationReceiver();
         initDistributionController();
         initIngestionController();
+        subscribeToSimulatedSensors();
         initRouter();
 
         /*
@@ -120,6 +124,15 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     }
 
+    private void subscribeToSimulatedSensors() {
+        List<SensorId> sensorIds = new ArrayList<>();
+        sensorIds.add(new SimulatedCo2Sensor("1"));
+        sensorIds.add(new SimulatedTempSensor("2"));
+        for (IngestionService ingestionService : ingestionServices.values()) {
+            ingestionService.addSubscriptions(sensorIds);
+        }
+    }
+
     void initRouter() {
         List<IngestionService> ingestors = new ArrayList<>();
         for (IngestionService ingestionService : ingestionServices.values()) {
@@ -137,6 +150,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.info("I've found a Ingestion service called '" + service.getName() + "' !");
             ingestionServices.put(service.getName(), service);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-subscriptionsCount: ", service::getSubscriptionsCount);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsIngested: ", service::getNumberOfMessagesImported);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedIngestions: ", service::getNumberOfMessagesFailed);
         }
