@@ -5,6 +5,7 @@ import no.cantara.realestate.cloudconnector.notifications.NotificationService;
 import no.cantara.realestate.cloudconnector.notifications.SlackNotificationService;
 import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMessageRouter;
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
+import no.cantara.realestate.cloudconnector.routing.ObservationReceiver;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.stingray.application.AbstractStingrayApplication;
@@ -24,6 +25,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private Map<String, DistributionService> distributionServices;
 
     private Map<String, IngestionService> ingestionServices;
+    private ObservationReceiver observationReceiver;
 
     public RealestateCloudconnectorApplication(ApplicationProperties config) {
         super("RealestateCloudconnector",
@@ -64,6 +66,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         StingraySecurity.initSecurity(this);
 
         initNotificationServices();
+        initObservationReceiver();
         initDistributionController();
         initIngestionController();
         initRouter();
@@ -118,23 +121,19 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     void initRouter() {
-        List<DistributionService> distributors = new ArrayList<>();
         List<IngestionService> ingestors = new ArrayList<>();
-        for (DistributionService value : distributionServices.values()) {
-            distributors.add(value);
+        for (IngestionService ingestionService : ingestionServices.values()) {
+            ingestors.add(ingestionService);
         }
-        for (IngestionService value : ingestionServices.values()) {
-            ingestors.add(value);
-        }
-        MessageRouter messageRouter = new ScheduledObservationMessageRouter(config, distributors, ingestors);
+        MessageRouter messageRouter = new ScheduledObservationMessageRouter(config, ingestors, observationReceiver);
         messageRouter.start();
     }
 
     void initIngestionController() {
-        ServiceLoader<IngestionService> serviceLoader = ServiceLoader.load(IngestionService.class);
+        ServiceLoader<IngestionService> ingestionServicesFound = ServiceLoader.load(IngestionService.class);
 
         ingestionServices = new HashMap<>();
-        for (IngestionService service : serviceLoader) {
+        for (IngestionService service : ingestionServicesFound) {
             log.info("I've found a Ingestion service called '" + service.getName() + "' !");
             ingestionServices.put(service.getName(), service);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
@@ -145,10 +144,10 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     protected void initDistributionController() {
-        ServiceLoader<DistributionService> serviceLoader = ServiceLoader.load(DistributionService.class);
+        ServiceLoader<DistributionService> distributionServicesFound = ServiceLoader.load(DistributionService.class);
 
         distributionServices = new HashMap<>();
-        for (DistributionService service : serviceLoader) {
+        for (DistributionService service : distributionServicesFound) {
             log.info("I've found a  Distribution service called '" + service.getName() + "' !");
             distributionServices.put(service.getName(), service);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
@@ -168,107 +167,14 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             notificationService = new SlackNotificationService();
         }
     }
-
-    /*
-
-    private SdClient createSdClient(ApplicationProperties config) {
-        SdClient sdClient;
-        String useSDProdValue = config.get("sd.api.prod");
-
-        if (Boolean.valueOf(useSDProdValue)) {
-            String apiUrl = config.get("sd.api.url");
-            try {
-                URI apiUri = new URI(apiUrl);
-                sdClient = new DesigoApiClientRest(apiUri, notificationService);
-                log.info("Logon to SdClient with username: {}", config.get("sd.api.username"));
-                sdClient.logon();
-                log.info("Running with a live REST SD.");
-            } catch (URISyntaxException e) {
-                throw new RealestateCloudconnectorException("Failed to connect SD Client to URL: " + apiUrl, e);
-            } catch (SdLogonFailedException e) {
-                throw new RealestateCloudconnectorException("Failed to logon SD Client. URL used: " + apiUrl, e);
-            }
-        } else {
-            URI simulatorUri = URI.create("https://simulator.totto.org:8080/SD");
-            sdClient = new SdClientSimulator();
-            log.info("Running with a simulator of SD.");
-        }
-        return sdClient;
+    private void initObservationReceiver() {
+        observationReceiver = new ObservationReceiver();
+        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-isHealthy: ", observationReceiver::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-ObservedValues-received: ", observationReceiver::getObservedValueCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-ConfigValues-received: ", observationReceiver::getObservedConfigValueCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationReceiver-ConfigMessages-received: ", observationReceiver::getObservedConfigMessageCount);
     }
 
-    protected MappedIdRepository createMappedIdRepository(boolean doImportSensorMappings) {
-        MappedIdRepository mappedIdRepository = new MappedIdRepositoryImpl();
-        if (doImportSensorMappings) {
-            SensorMappingImporter sensorMappingImporter = new DesigoSensorMappingImporter();
-            sensorMappingImporter.importSensorMappings(config, mappedIdRepository);
-        }
-        return mappedIdRepository;
-    }
 
-    private ScheduledImportManager wireScheduledImportManager(SdClient sdClient, ObservationDistributionClient distributionClient, MetricsDistributionClient metricsClient, MappedIdRepository mappedIdRepository) {
-
-        ScheduledImportManager scheduledImportManager = null;
-
-        List<String> importAllFromRealestates = findListOfRealestatesToImportFrom();
-        log.info("Importallres: {}", importAllFromRealestates);
-        if (importAllFromRealestates != null && importAllFromRealestates.size() > 0) {
-            for (String realestate : importAllFromRealestates) {
-                MappedIdQuery mappedIdQuery = new DesigoMappedIdQueryBuilder().realEstate(realestate).build();
-                TrendLogsImporter trendLogsImporter = new MappedIdBasedImporter(mappedIdQuery, sdClient, distributionClient, metricsClient, mappedIdRepository);
-                if (scheduledImportManager == null) {
-                    scheduledImportManager = new ScheduledImportManager(trendLogsImporter, config);
-                } else {
-                    scheduledImportManager.addTrendLogsImporter(trendLogsImporter);
-                }
-            }
-        } else {
-            log.warn("Using Template import config for RealEstates: REstate1 and RealEst2");
-            MappedIdQuery mappedIdQuery = new DesigoMappedIdQueryBuilder().realEstate("REstate1").build();
-            TrendLogsImporter trendLogsImporter = new MappedIdBasedImporter(mappedIdQuery, sdClient, distributionClient, metricsClient, mappedIdRepository);
-            scheduledImportManager = new ScheduledImportManager(trendLogsImporter, config);
-
-            MappedIdQuery energyOnlyQuery = new MappedIdQueryBuilder().realEstate("RealEst2")
-                    .sensorType(SensorType.energy.name())
-                    .build();
-
-            TrendLogsImporter mappedIdBasedImporter = new MappedIdBasedImporter(energyOnlyQuery, sdClient, distributionClient, metricsClient, mappedIdRepository);
-            scheduledImportManager.addTrendLogsImporter(mappedIdBasedImporter);
-
-            MappedIdQuery mysteryHouseQuery = new MappedIdQueryBuilder().realEstate("511")
-                    .build();
-            TrendLogsImporter mysteryImporter = new MappedIdBasedImporter(mysteryHouseQuery, sdClient, distributionClient, metricsClient, mappedIdRepository);
-            scheduledImportManager.addTrendLogsImporter(mysteryImporter);
-        }
-
-        return scheduledImportManager;
-    }
-
-    private List<String> findListOfRealestatesToImportFrom() {
-        List<String> realEstates = null;
-        try {
-            String reCsvSplitted = config.get("importsensorsQuery.realestates");
-            if (reCsvSplitted != null) {
-                realEstates = Arrays.asList(reCsvSplitted.split(","));
-            }
-        } catch (Exception e) {
-            log.warn("Failed to read list of RealEstates used for import.", e);
-        }
-        return realEstates;
-    }
-
-    private ObservationDistributionResource createObservationDistributionResource(ObservationDistributionClient observationDistributionClient) {
-        return new ObservationDistributionResource(observationDistributionClient);
-    }
-
-    private Random createRandom() {
-        return new Random(System.currentTimeMillis());
-    }
-
-    private RandomizerResource createRandomizerResource() {
-        Random random = get(Random.class);
-        return new RandomizerResource(random);
-    }
-
-     */
 
 }
