@@ -1,6 +1,5 @@
 package no.cantara.realestate.cloudconnector;
 
-import no.cantara.realestate.clooudconnector.StatusType;
 import org.slf4j.helpers.MessageFormatter;
 
 import java.util.UUID;

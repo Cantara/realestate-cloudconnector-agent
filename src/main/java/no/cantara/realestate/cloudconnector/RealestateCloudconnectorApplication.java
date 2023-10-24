@@ -1,7 +1,8 @@
 package no.cantara.realestate.cloudconnector;
 
 import no.cantara.config.ApplicationProperties;
-import no.cantara.realestate.SensorId;
+import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepository;
+import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepositoryImpl;
 import no.cantara.realestate.cloudconnector.notifications.NotificationService;
 import no.cantara.realestate.cloudconnector.notifications.SlackNotificationService;
 import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMessageRouter;
@@ -10,10 +11,13 @@ import no.cantara.realestate.cloudconnector.routing.ObservationDistributor;
 import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
-import no.cantara.realestate.mappingtable.repository.MappedIdRepository;
-import no.cantara.realestate.mappingtable.repository.MappedIdRepositoryImpl;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
+import no.cantara.realestate.semantics.rec.SensorRecObject;
+import no.cantara.realestate.sensors.MappedSensorId;
+import no.cantara.realestate.sensors.SensorId;
+import no.cantara.realestate.sensors.SensorType;
+import no.cantara.realestate.sensors.tfm.Tfm;
 import no.cantara.stingray.application.AbstractStingrayApplication;
 import no.cantara.stingray.application.health.StingrayHealthService;
 import no.cantara.stingray.security.StingraySecurity;
@@ -32,6 +36,9 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     private Map<String, IngestionService> ingestionServices;
     private ObservationsRepository observationsRepository;
+    private ObservationDistributor observationDistributor;
+    private MappedIdRepository mappedIdRepository;
+    private Thread observationDistributorThread;
 
     public RealestateCloudconnectorApplication(ApplicationProperties config) {
         super("RealestateCloudconnector",
@@ -70,19 +77,14 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     protected void doInit() {
         initBuiltinDefaults();
         StingraySecurity.initSecurity(this);
-
+        initMappedIdRepository();
         initNotificationServices();
         initObservationReceiver();
         initDistributionController();
         initIngestionController();
         subscribeToSimulatedSensors();
         initRouter();
-        MappedIdRepository mappedIdRepository = new MappedIdRepositoryImpl();
-
-        ObservationDistributor observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository);
-        Thread t = new Thread(observationDistributor);
-        t.start();
-        log.trace("Started ObservationDistributor thread");
+        initObservationDistributor();
         /*
         boolean doImportData = config.asBoolean("import.data");
         enableStream = config.asBoolean("sd.stream.enabled");
@@ -134,11 +136,30 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     private void subscribeToSimulatedSensors() {
         List<SensorId> sensorIds = new ArrayList<>();
-        sensorIds.add(new SimulatedCo2Sensor("1"));
-        sensorIds.add(new SimulatedTempSensor("2"));
+        SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
+        sensorIds.add(simulatedCo2Sensor);
+        MappedSensorId mappedSimulatedCo2Sensor = new MappedSensorId(simulatedCo2Sensor, buildRecStub("room1", SensorType.co2));
+        mappedIdRepository.add(mappedSimulatedCo2Sensor);
+        SensorId simulatedTempSensor = new SimulatedTempSensor("2");
+        sensorIds.add(simulatedTempSensor);
+        MappedSensorId mappedSimulatedTempSensor = new MappedSensorId(simulatedTempSensor, buildRecStub("room1", SensorType.temp));
+        mappedIdRepository.add(mappedSimulatedTempSensor);
+
         for (IngestionService ingestionService : ingestionServices.values()) {
             ingestionService.addSubscriptions(sensorIds);
         }
+    }
+
+    public static SensorRecObject buildRecStub(String roomName, SensorType sensorType) {
+        SensorRecObject recObject = new SensorRecObject(UUID.randomUUID().toString());
+        recObject.setTfm(new Tfm(roomName + "-" + sensorType.name()));
+        recObject.setRealEstate("TestRealEstate");
+        recObject.setBuilding("TestBuilding");
+        recObject.setFloor("1");
+        recObject.setServesRoom(roomName);
+        recObject.setPlacementRoom(roomName);
+        recObject.setSensorType(sensorType.name());
+        return recObject;
     }
 
     void initRouter() {
@@ -193,8 +214,28 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         observationsRepository = new ObservationsRepository();
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-isHealthy: ", observationsRepository::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-received: ", observationsRepository::getObservedValueCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValuesQueue-size: ", observationsRepository::getObservedValuesQueueSize);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigValues-received: ", observationsRepository::getObservedConfigValueCount);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigMessages-received: ", observationsRepository::getObservedConfigMessageCount);
+    }
+
+    private void initObservationDistributor() {
+
+        if (observationsRepository == null) {
+            log.warn("ObservationsRepository is null. Cannot start ObservationDistributor");
+            throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
+        }
+        observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy: ", observationDistributor::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed: ", observationDistributor::getObservedValueDistributedCount);
+        observationDistributorThread = new Thread(observationDistributor);
+        observationDistributorThread.start();
+        log.trace("Started ObservationDistributor thread");
+    }
+
+    private void initMappedIdRepository() {
+        this.mappedIdRepository = new MappedIdRepositoryImpl();
+        get(StingrayHealthService.class).registerHealthProbe("MappedIdRepository-size: ", mappedIdRepository::size);
     }
 
 

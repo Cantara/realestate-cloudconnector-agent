@@ -1,9 +1,9 @@
 package no.cantara.realestate.cloudconnector.ingestion;
 
-import no.cantara.realestate.SensorId;
 import no.cantara.realestate.observations.ObservationListener;
 import no.cantara.realestate.observations.ObservedValue;
 import no.cantara.realestate.plugins.ingestion.PresentValueIngestionService;
+import no.cantara.realestate.sensors.SensorId;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,6 @@
 package no.cantara.realestate.cloudconnector.sensors.simulated;
 
-import no.cantara.realestate.SensorId;
-import no.cantara.realestate.UniqueKey;
+import no.cantara.realestate.sensors.SensorId;
 
 public class SimulatedTempSensor extends SensorId {
 
@@ -11,7 +10,7 @@ public class SimulatedTempSensor extends SensorId {
     }
 
     @Override
-    public UniqueKey<String> getMappingKey() {
-        return () -> "SimulatedTempSensor";
+    public SimulatedUniqueKey getMappingKey() {
+        return new SimulatedUniqueKey( "SimulatedTempSensor-"+getId());
     }
 }

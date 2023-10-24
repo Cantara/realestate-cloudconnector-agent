@@ -118,4 +118,8 @@ public class ObservationsRepository implements ObservationListener {
     public boolean isHealthy() {
         return true;
     }
+
+    public long getObservedValuesQueueSize() {
+        return observedValuesQueue.size();
+    }
 }
