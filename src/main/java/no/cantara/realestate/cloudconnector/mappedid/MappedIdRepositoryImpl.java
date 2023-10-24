@@ -22,12 +22,17 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
         log.warn("********* MappedIdRepositoryImpl created ***********");
     }
 
-    List<MappedSensorId> sensorIds = new ArrayList<>();
+    List<MappedSensorId> mappedSensorIds = new ArrayList<>();
     @Override
     public void add(MappedSensorId sensorId) {
         if (sensorId != null) {
-            sensorIds.add(sensorId);
+            mappedSensorIds.add(sensorId);
         }
+    }
+
+    @Override
+    public void addAll(List<MappedSensorId> sensorIds) {
+        mappedSensorIds.addAll(sensorIds);
     }
 
     @Override
@@ -35,13 +40,13 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
         List<MappedSensorId> matching = null;
         if ( mappingKey != null && mappingKey.getKey() != null) {
             if (mappingKey.getKey() instanceof Tfm) {
-                matching = sensorIds.stream()
+                matching = mappedSensorIds.stream()
                         .filter(Objects::nonNull)
                         .filter(r -> Objects.nonNull(r.getRec().getTfm()))
                         .filter(r -> r.getRec().getTfm().equals(mappingKey.getKey()))
                         .collect(Collectors.toList());
             } else {
-                matching = sensorIds.stream()
+                matching = mappedSensorIds.stream()
                         .filter(Objects::nonNull)
                         .filter(r -> Objects.nonNull(r.getRec().getTfm()))
                         .filter(r -> r.getSensorId().getMappingKey().equals(mappingKey))
@@ -53,7 +58,7 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
 
     public List<MappedSensorId> find(MappedIdQuery mappedIdQuery) {
         Predicate<MappedSensorId> predicate = mappedIdQuery.getPredicate();
-        List<MappedSensorId> matching = sensorIds.stream()
+        List<MappedSensorId> matching = mappedSensorIds.stream()
                 .filter(predicate)
                 .collect(Collectors.toList());
         return matching;
@@ -66,13 +71,13 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
 
     @Override
     public long size() {
-        if (sensorIds == null) {
+        if (mappedSensorIds == null) {
             return 0;
         }
-        return sensorIds.size() ;
+        return mappedSensorIds.size() ;
     }
 
     protected List<MappedSensorId> getAll() {
-        return sensorIds;
+        return mappedSensorIds;
     }
 }

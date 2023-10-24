@@ -11,6 +11,7 @@ import java.util.List;
 public interface MappedIdRepository {
 
     void add(MappedSensorId sensorId);
+    void addAll(List<MappedSensorId> sensorIds);
     List<MappedSensorId> find(UniqueKey mappingKey);
 
     List<MappedSensorId> find(MappedIdQuery mappedIdQuery);

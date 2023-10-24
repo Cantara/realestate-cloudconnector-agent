@@ -1,6 +1,7 @@
 package no.cantara.realestate.cloudconnector.mappedid;
 
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
+import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
 import no.cantara.realestate.semantics.rec.SensorRecObject;
 import no.cantara.realestate.sensors.MappedSensorId;
 import no.cantara.realestate.sensors.SensorId;
@@ -92,5 +93,18 @@ class MappedIdRepositoryImplTest {
         assertNotNull(mappedSensorIds);
         assertEquals(1, mappedSensorIds.size());
 
+    }
+
+    @Test
+    void addAllTest() {
+        SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
+        SensorRecObject recRoom1 = buildRecStub("room1", SensorType.co2);
+        MappedSensorId mappedSimulatedCo2Sensor = new MappedSensorId(simulatedCo2Sensor, recRoom1);
+        SensorId simulatedTempSensor = new SimulatedTempSensor("2");
+        SensorRecObject recRoom1Temp = buildRecStub("room1", SensorType.temp);
+        MappedSensorId mappedSimulatedTempSensor = new MappedSensorId(simulatedTempSensor, recRoom1Temp);
+        assertEquals(0, repository.size());
+        repository.addAll(List.of(mappedSimulatedCo2Sensor, mappedSimulatedTempSensor));
+        assertEquals(2, repository.size());
     }
 }

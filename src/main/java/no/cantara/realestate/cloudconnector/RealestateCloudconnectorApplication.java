@@ -11,6 +11,8 @@ import no.cantara.realestate.cloudconnector.routing.ObservationDistributor;
 import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
+import no.cantara.realestate.plugins.RealEstatePluginFactory;
+import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.realestate.semantics.rec.SensorRecObject;
@@ -21,7 +23,6 @@ import no.cantara.realestate.sensors.tfm.Tfm;
 import no.cantara.stingray.application.AbstractStingrayApplication;
 import no.cantara.stingray.application.health.StingrayHealthService;
 import no.cantara.stingray.security.StingraySecurity;
-import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -76,15 +77,15 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     @Override
     protected void doInit() {
-        boolean importSensormappings = config.asBoolean("sensormappings.import.enabled");
+        boolean useSimulatedSensors = config.asBoolean("sensormappings.simulator.enabled");
         initBuiltinDefaults();
         StingraySecurity.initSecurity(this);
-        mappedIdRepository = init(MappedIdRepository.class, () -> createMappedIdRepository(importSensormappings));
+        mappedIdRepository = createMappedIdRepository(useSimulatedSensors);
         initNotificationServices();
         initObservationReceiver();
         initDistributionController();
+        initPluginFactories();
         initIngestionController();
-        boolean useSimulatedSensors = !importSensormappings;
         subscribeToSensors(useSimulatedSensors);
         initRouter();
         initObservationDistributor();
@@ -172,6 +173,20 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         messageRouter.start();
     }
 
+    void initPluginFactories() {
+        Properties properties = new Properties();
+        config.map().forEach((key, value) -> properties.put(key, value));
+        PluginConfig pluginConfig = new PluginConfig(properties);
+        ServiceLoader<RealEstatePluginFactory> pluginFactories = ServiceLoader.load(RealEstatePluginFactory.class);
+        for (RealEstatePluginFactory pluginFactory : pluginFactories) {
+            log.info("I've found a pluginFactory called '" + pluginFactory.getDisplayName() + "' !");
+            pluginFactory.initialize(pluginConfig);
+            List<MappedSensorId> mappedSensorIds = pluginFactory.createSensorMappingImporter().importSensorMappings();
+            log.debug("Adding {} sensorIds from pluginFactory: {}", mappedSensorIds.size(), pluginFactory.getDisplayName());
+            mappedIdRepository.addAll(mappedSensorIds);
+        }
+    }
+
     void initIngestionController() {
         ServiceLoader<IngestionService> ingestionServicesFound = ServiceLoader.load(IngestionService.class);
 
@@ -221,7 +236,6 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     private void initObservationDistributor() {
-
         if (observationsRepository == null) {
             log.warn("ObservationsRepository is null. Cannot start ObservationDistributor");
             throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
@@ -235,15 +249,10 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
 
-    protected MappedIdRepository createMappedIdRepository(boolean doImportSensorMappings) {
+    protected MappedIdRepository createMappedIdRepository(boolean useSimulatedSensors) {
         MappedIdRepository mappedIdRepository = new MappedIdRepositoryImpl();
         get(StingrayHealthService.class).registerHealthProbe("MappedIdRepository-size: ", mappedIdRepository::size);
-        if (doImportSensorMappings) {
-            //FIXME: Import sensormappings using config
-            throw new NotImplementedException("Import sensormappings using config");
-//            SensorMappingImporter sensorMappingImporter = new DesigoSensorMappingImporter();
-//            sensorMappingImporter.importSensorMappings(config, mappedIdRepository);
-        } else {
+        if (useSimulatedSensors) {
             log.warn("Using simulated SensorId's");
             List<SensorId> sensorIds = new ArrayList<>();
             SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
