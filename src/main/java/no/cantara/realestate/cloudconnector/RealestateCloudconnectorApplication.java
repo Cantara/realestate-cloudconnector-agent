@@ -21,6 +21,7 @@ import no.cantara.realestate.sensors.tfm.Tfm;
 import no.cantara.stingray.application.AbstractStingrayApplication;
 import no.cantara.stingray.application.health.StingrayHealthService;
 import no.cantara.stingray.security.StingraySecurity;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -75,14 +76,16 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     @Override
     protected void doInit() {
+        boolean importSensormappings = config.asBoolean("sensormappings.import.enabled");
         initBuiltinDefaults();
         StingraySecurity.initSecurity(this);
-        initMappedIdRepository();
+        mappedIdRepository = init(MappedIdRepository.class, () -> createMappedIdRepository(importSensormappings));
         initNotificationServices();
         initObservationReceiver();
         initDistributionController();
         initIngestionController();
-        subscribeToSimulatedSensors();
+        boolean useSimulatedSensors = !importSensormappings;
+        subscribeToSensors(useSimulatedSensors);
         initRouter();
         initObservationDistributor();
         /*
@@ -134,16 +137,14 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     }
 
-    private void subscribeToSimulatedSensors() {
+    private void subscribeToSensors(boolean useSimulatedSensors) {
         List<SensorId> sensorIds = new ArrayList<>();
-        SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
-        sensorIds.add(simulatedCo2Sensor);
-        MappedSensorId mappedSimulatedCo2Sensor = new MappedSensorId(simulatedCo2Sensor, buildRecStub("room1", SensorType.co2));
-        mappedIdRepository.add(mappedSimulatedCo2Sensor);
-        SensorId simulatedTempSensor = new SimulatedTempSensor("2");
-        sensorIds.add(simulatedTempSensor);
-        MappedSensorId mappedSimulatedTempSensor = new MappedSensorId(simulatedTempSensor, buildRecStub("room1", SensorType.temp));
-        mappedIdRepository.add(mappedSimulatedTempSensor);
+        if (useSimulatedSensors) {
+            SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
+            sensorIds.add(simulatedCo2Sensor);
+            SensorId simulatedTempSensor = new SimulatedTempSensor("2");
+            sensorIds.add(simulatedTempSensor);
+        }
 
         for (IngestionService ingestionService : ingestionServices.values()) {
             ingestionService.addSubscriptions(sensorIds);
@@ -233,9 +234,29 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         log.trace("Started ObservationDistributor thread");
     }
 
-    private void initMappedIdRepository() {
-        this.mappedIdRepository = new MappedIdRepositoryImpl();
+
+    protected MappedIdRepository createMappedIdRepository(boolean doImportSensorMappings) {
+        MappedIdRepository mappedIdRepository = new MappedIdRepositoryImpl();
         get(StingrayHealthService.class).registerHealthProbe("MappedIdRepository-size: ", mappedIdRepository::size);
+        if (doImportSensorMappings) {
+            //FIXME: Import sensormappings using config
+            throw new NotImplementedException("Import sensormappings using config");
+//            SensorMappingImporter sensorMappingImporter = new DesigoSensorMappingImporter();
+//            sensorMappingImporter.importSensorMappings(config, mappedIdRepository);
+        } else {
+            log.warn("Using simulated SensorId's");
+            List<SensorId> sensorIds = new ArrayList<>();
+            SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
+            sensorIds.add(simulatedCo2Sensor);
+            MappedSensorId mappedSimulatedCo2Sensor = new MappedSensorId(simulatedCo2Sensor, buildRecStub("room1", SensorType.co2));
+            mappedIdRepository.add(mappedSimulatedCo2Sensor);
+            SensorId simulatedTempSensor = new SimulatedTempSensor("2");
+            sensorIds.add(simulatedTempSensor);
+            MappedSensorId mappedSimulatedTempSensor = new MappedSensorId(simulatedTempSensor, buildRecStub("room1", SensorType.temp));
+            mappedIdRepository.add(mappedSimulatedTempSensor);
+        }
+
+        return mappedIdRepository;
     }
 
 

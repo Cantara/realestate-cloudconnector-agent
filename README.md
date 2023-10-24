@@ -4,4 +4,5 @@ Pipe observations from Building Automation Systems to your favorite Cloud Provid
 ## Configuration
 ``` 
 ingestion.interval.minutes
+sensormappings.import.enabled=true
 ```

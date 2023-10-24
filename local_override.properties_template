@@ -8,12 +8,15 @@ sd.scheduledImport.enabled=false
 #distribution.azure.connectionString=HostName=cludconnectorhub-test.azure-devices.net;DeviceId=metasys-cloudconnector-agent;SharedAccessKey=BHzprq8GTedsblOBkXIGD3AYKg1nkYIJNVdOIz0tGDo=
 distribution.azure.connectionString=HostName=cludconnectorhub-test-west.azure-devices.net;DeviceId=baardl-test;SharedAccessKey=WNTmjUclZLBhZKWEaOdvq9u8KOSIVOgBGN3Pf+9faD0=
 
-# Azure SensorMappings
+# Import Sensor Mappings
+sensormappings.import.enabled=true
+
+## Azure SensorMappings
 sensormappings.azure.enabled=true
 sensormappings.azure.connectionString=DefaultEndpointsProtocol=https;AccountName=sensormappings;AccountKey=uhQEa2beATC8sGl1hhwBvrOIDWoKqjYzZMNm+4h+ngpDPJt5GiEGpGojZLPeJjZtrLS8Ox4T3jco+AStKH+RAA==;EndpointSuffix=core.windows.net
 sensormappings.azure.tableName=Desigo
 
-# CSV SensorMappings
+## CSV SensorMappings
 sensormappings.csv.enabled=false
 sensormappings.csv.directory=sensor-mappings
 sensormappings.csv.filePrefix=Desigo
