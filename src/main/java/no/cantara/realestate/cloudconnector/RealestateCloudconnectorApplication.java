@@ -174,32 +174,46 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     void initPluginFactories() {
-        Properties properties = new Properties();
-        config.map().forEach((key, value) -> properties.put(key, value));
-        PluginConfig pluginConfig = new PluginConfig(properties);
+
+        Map<String, String> propertiesMap = config.map();
+        PluginConfig pluginConfig = PluginConfig.fromMap(propertiesMap);
         ServiceLoader<RealEstatePluginFactory> pluginFactories = ServiceLoader.load(RealEstatePluginFactory.class);
         for (RealEstatePluginFactory pluginFactory : pluginFactories) {
             log.info("I've found a pluginFactory called '" + pluginFactory.getDisplayName() + "' !");
+            //#14 FIXME filter properties based on plugin Id
+//            pluginConfig = PluginConfig.fromMap(config.subMap(pluginFactory.getId()));
             pluginFactory.initialize(pluginConfig);
             List<MappedSensorId> mappedSensorIds = pluginFactory.createSensorMappingImporter().importSensorMappings();
             log.debug("Adding {} sensorIds from pluginFactory: {}", mappedSensorIds.size(), pluginFactory.getDisplayName());
             mappedIdRepository.addAll(mappedSensorIds);
+            List<IngestionService> pluginIngestionServices = pluginFactory.createIngestionServices();
+            log.debug("Found {} ingestion services from pluginFactory: {}", pluginIngestionServices.size(), pluginFactory.getDisplayName());
+            for (IngestionService service : pluginIngestionServices) {
+                log.info("I've found a Ingestion service called '" + service.getName() + "' !");
+                initIngestionService(service);
+            }
         }
     }
 
     void initIngestionController() {
         ServiceLoader<IngestionService> ingestionServicesFound = ServiceLoader.load(IngestionService.class);
 
-        ingestionServices = new HashMap<>();
         for (IngestionService service : ingestionServicesFound) {
             log.info("I've found a Ingestion service called '" + service.getName() + "' !");
-            ingestionServices.put(service.getName(), service);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-subscriptionsCount: ", service::getSubscriptionsCount);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsIngested: ", service::getNumberOfMessagesImported);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedIngestions: ", service::getNumberOfMessagesFailed);
+            initIngestionService(service);
         }
         log.info("Found " + ingestionServices.size() + " ingestion services!");
+    }
+
+    private void initIngestionService(IngestionService service) {
+        if (ingestionServices == null) {
+            ingestionServices = new HashMap<>();
+        }
+        ingestionServices.put(service.getName(), service);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-subscriptionsCount: ", service::getSubscriptionsCount);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsIngested: ", service::getNumberOfMessagesImported);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedIngestions: ", service::getNumberOfMessagesFailed);
     }
 
     protected void initDistributionController() {
