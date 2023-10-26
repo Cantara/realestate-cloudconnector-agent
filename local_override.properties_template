@@ -5,15 +5,15 @@ importsensorsQuery.realestates=511
 sd.scheduledImport.enabled=false
 
 # Azure distribution
-#distribution.azure.connectionString=HostName=cludconnectorhub-test.azure-devices.net;DeviceId=metasys-cloudconnector-agent;SharedAccessKey=BHzprq8GTedsblOBkXIGD3AYKg1nkYIJNVdOIz0tGDo=
-distribution.azure.connectionString=HostName=cludconnectorhub-test-west.azure-devices.net;DeviceId=baardl-test;SharedAccessKey=WNTmjUclZLBhZKWEaOdvq9u8KOSIVOgBGN3Pf+9faD0=
+#distribution.azure.connectionString=<tobeset>>
+distribution.azure.connectionString=<tobeset>
 
 # Import Sensor Mappings
 sensormappings.import.enabled=true
 
 ## Azure SensorMappings
 sensormappings.azure.enabled=true
-sensormappings.azure.connectionString=DefaultEndpointsProtocol=https;AccountName=sensormappings;AccountKey=uhQEa2beATC8sGl1hhwBvrOIDWoKqjYzZMNm+4h+ngpDPJt5GiEGpGojZLPeJjZtrLS8Ox4T3jco+AStKH+RAA==;EndpointSuffix=core.windows.net
+sensormappings.azure.connectionString=<tobest>
 sensormappings.azure.tableName=Desigo
 
 ## CSV SensorMappings
@@ -24,6 +24,6 @@ sensormappings.csv.filePrefix=Desigo
 # Alerting
 ## Slack
 slack_alerting_enabled=true
-slack_token=xoxb-2591257433-5700666378914-QUe3t0VANq8BOLRYaTz6gSb9
+slack_token=<tobeset>
 slack_alarm_channel=messom_alerts_prod_nmbu
 slack_warning_channel=messom_alerts_prod_nmbu
