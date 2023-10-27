@@ -17,9 +17,7 @@ import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.realestate.semantics.rec.SensorRecObject;
-import no.cantara.realestate.sensors.MappedSensorId;
-import no.cantara.realestate.sensors.SensorId;
-import no.cantara.realestate.sensors.SensorType;
+import no.cantara.realestate.sensors.*;
 import no.cantara.realestate.sensors.tfm.Tfm;
 import no.cantara.stingray.application.AbstractStingrayApplication;
 import no.cantara.stingray.application.health.StingrayHealthService;
@@ -141,18 +139,35 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     }
 
-    private void subscribeToSensors(boolean useSimulatedSensors) {
+    protected void subscribeToSensors(boolean useSimulatedSensors) {
         List<SensorId> sensorIds = new ArrayList<>();
         if (useSimulatedSensors) {
             SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
             sensorIds.add(simulatedCo2Sensor);
             SensorId simulatedTempSensor = new SimulatedTempSensor("2");
             sensorIds.add(simulatedTempSensor);
+        } else {
+            for (IngestionService ingestionService : ingestionServices.values()) {
+                List<MappedSensorId> mappedSensorIds = findSensorsToSubscribeTo(ingestionService.getName(), ingestionService.getClass());
+                log.debug("Adding {} sensorIds from ingestionService: {}", mappedSensorIds.size(), ingestionService.getName());
+                for (MappedSensorId mappedSensorId : mappedSensorIds) {
+                    log.debug("Subscribe to sensorId: {}", mappedSensorId.getSensorId());
+                    sensorIds.add(mappedSensorId.getSensorId());
+                }
+            }
         }
 
         for (IngestionService ingestionService : ingestionServices.values()) {
             ingestionService.addSubscriptions(sensorIds);
         }
+    }
+
+    protected List<MappedSensorId> findSensorsToSubscribeTo(String ingestionServiceName, Class<? extends IngestionService> ingestionClass) {
+        //FIXME need propper implementation with query bassed on ingestionServiceName
+        String realestatesToImport = config.get("importsensorsQuery.realestates");
+        MappedIdQuery idQuery = new MappedIdQueryBuilder().realEstate(realestatesToImport).build();
+        List<MappedSensorId> mappedSensorIds = mappedIdRepository.find(idQuery);
+        return mappedSensorIds;
     }
 
     public static SensorRecObject buildRecStub(String roomName, SensorType sensorType) {
