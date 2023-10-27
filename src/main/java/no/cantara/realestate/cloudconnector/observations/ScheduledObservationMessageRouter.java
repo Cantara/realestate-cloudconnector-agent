@@ -95,6 +95,7 @@ public class ScheduledObservationMessageRouter implements MessageRouter {
             Runnable task1 = () -> {
                     log.info("Request a new ingestion round for {} ingestion services.", ingestionServices.size());
                     for (IngestionService ingestionService : ingestionServices) {
+                        log.debug("Request a new ingestion round for {} ingestion service.", ingestionService.getName());
                         try {
                             log.trace("Running...ingest for {} ", ingestionService.getName());
                             if (ingestionService instanceof PresentValueIngestionService) {

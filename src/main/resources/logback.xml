@@ -9,9 +9,9 @@
 
     <appender name="RF"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${REALESTATE_CLOUDCONNECTOR_HOME}/realestate-cloudconnector.log</file>
+        <file>${REALESTATE_CLOUDCONNECTOR_HOME}/cloudconnector.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${REALESTATE_CLOUDCONNECTOR_HOME}/realestate-cloudconnector-%d{dd.MM.yyyy}.%i.log</fileNamePattern>
+            <fileNamePattern>${REALESTATE_CLOUDCONNECTOR_HOME}/cloudconnector-%d{dd.MM.yyyy}.%i.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <maxFileSize>200MB</maxFileSize>
             <totalSizeCap>5GB</totalSizeCap>
@@ -34,7 +34,7 @@
         <appender-ref ref="RF"/>
         <appender-ref ref="STDOUT" />
     </logger>
-    <logger name="no.cantara.realestate" level="debug" />
+    <logger name="no.cantara.realestate" level="trace" />
     <logger name="org.apache.hc.client5.http.protocol.ResponseProcessCookies" level="error" />
 
     <root level="INFO">
