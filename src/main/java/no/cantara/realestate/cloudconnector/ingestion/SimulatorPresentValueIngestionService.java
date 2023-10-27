@@ -2,12 +2,13 @@ package no.cantara.realestate.cloudconnector.ingestion;
 
 import no.cantara.realestate.observations.ObservationListener;
 import no.cantara.realestate.observations.ObservedValue;
+import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.ingestion.PresentValueIngestionService;
+import no.cantara.realestate.plugins.notifications.NotificationListener;
 import no.cantara.realestate.sensors.SensorId;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 public class SimulatorPresentValueIngestionService implements PresentValueIngestionService {
 
@@ -17,6 +18,7 @@ public class SimulatorPresentValueIngestionService implements PresentValueIngest
 
     private List<SensorId> sensorIds = new ArrayList<>();
     private ObservationListener observationListener;
+    private NotificationListener notificationListener;
 
     @Override
     public String getName() {
@@ -24,15 +26,17 @@ public class SimulatorPresentValueIngestionService implements PresentValueIngest
     }
 
     @Override
-    public boolean initialize(Properties properties) {
+    public boolean initialize(PluginConfig properties) {
         isInitialized = true;
         return true;
     }
 
     @Override
-    public void openConnection(ObservationListener observationListener) {
+    public void openConnection(ObservationListener observationListener, NotificationListener notificationListener) {
         this.observationListener = observationListener;
+        this.notificationListener = notificationListener;
     }
+
 
     @Override
     public void closeConnection() {

@@ -3,14 +3,15 @@ package no.cantara.realestate.cloudconnector.observations;
 import no.cantara.config.ApplicationProperties;
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
 import no.cantara.realestate.observations.ObservationListener;
+import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.realestate.plugins.ingestion.PresentValueIngestionService;
 import no.cantara.realestate.plugins.ingestion.TrendsIngestionService;
+import no.cantara.realestate.plugins.notifications.NotificationListener;
 import org.slf4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -30,17 +31,18 @@ public class ScheduledObservationMessageRouter implements MessageRouter {
     private static boolean scheduled_import_running = false;
     private final int ingestionIntervalSec;
     private final ApplicationProperties config;
-    private final Properties properties;
+    private final PluginConfig pluginConfig;
+    private final NotificationListener notificationListener;
 
-    public ScheduledObservationMessageRouter(ApplicationProperties config, List<IngestionService> ingestionServices, ObservationListener observationListener) {
+    public ScheduledObservationMessageRouter(ApplicationProperties config, List<IngestionService> ingestionServices, ObservationListener observationListener, NotificationListener notificationListener) {
         this.observationListener = observationListener;
         this.ingestionServices = ingestionServices;
+        this.notificationListener = notificationListener;
         if (config == null) {
             throw new IllegalArgumentException("config cannot be null");
         }
         this.config = config;
-        this.properties = new Properties();
-        this.properties.putAll(config.map());
+        this.pluginConfig = PluginConfig.fromMap(config.map());
         Integer scheduleMinutes = findScheduledMinutes(config);
         if (scheduleMinutes != null) {
             ingestionIntervalSec = scheduleMinutes * 60;
@@ -78,9 +80,9 @@ public class ScheduledObservationMessageRouter implements MessageRouter {
                 try {
                     if (!ingestionService.isInitialized()) {
                         log.info("Initializing ingestionService {}", ingestionService.getName());
-                        boolean initializedOk = ingestionService.initialize(properties);
+                        boolean initializedOk = ingestionService.initialize(pluginConfig);
                         if (initializedOk) {
-                            ingestionService.openConnection(observationListener);
+                            ingestionService.openConnection(observationListener, notificationListener);
                         } else {
                             log.warn("Failed to initialize ingestionService {}", ingestionService.getName());
                         }

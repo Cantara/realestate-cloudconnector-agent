@@ -11,6 +11,7 @@ import no.cantara.realestate.cloudconnector.routing.ObservationDistributor;
 import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
+import no.cantara.realestate.cloudconnector.status.HealthListener;
 import no.cantara.realestate.plugins.RealEstatePluginFactory;
 import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.distribution.DistributionService;
@@ -33,6 +34,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private static final Logger log = getLogger(RealestateCloudconnectorApplication.class);
     private boolean enableStream;
     private boolean enableScheduledImport;
+
+    private HealthListener notificationListener;
     private NotificationService notificationService;
     private Map<String, DistributionService> distributionServices;
 
@@ -169,7 +172,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         for (IngestionService ingestionService : ingestionServices.values()) {
             ingestors.add(ingestionService);
         }
-        MessageRouter messageRouter = new ScheduledObservationMessageRouter(config, ingestors, observationsRepository);
+        MessageRouter messageRouter = new ScheduledObservationMessageRouter(config, ingestors, observationsRepository, notificationListener);
         messageRouter.start();
     }
 
@@ -239,6 +242,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.warn("ServiceLoader could not find any implementation of NotificationService. Using SlackNotificationService.");
             notificationService = new SlackNotificationService();
         }
+        this.notificationListener = new HealthListener(notificationService);
     }
     private void initObservationReceiver() {
         observationsRepository = new ObservationsRepository();
