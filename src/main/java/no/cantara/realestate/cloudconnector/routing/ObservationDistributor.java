@@ -9,13 +9,15 @@ import no.cantara.realestate.sensors.MappedSensorId;
 import no.cantara.realestate.sensors.SensorId;
 import no.cantara.realestate.sensors.UniqueKey;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import static no.cantara.realestate.cloudconnector.RealestateCloudconnectorApplication.auditLog;
+import static org.slf4j.LoggerFactory.getLogger;
+
 public class ObservationDistributor implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(ObservationDistributor.class);
+    private static final Logger log = getLogger(ObservationDistributor.class);
     private final ObservationsRepository observationsRepository;
     private final List<DistributionService> distributionServices;
     private final MappedIdRepository mappedIdRepository;
@@ -49,6 +51,7 @@ public class ObservationDistributor implements Runnable {
 
     protected void addSemanticsAndDistribute(ObservedValue observedValue) {
         log.trace("Fetched observedValue {} from the queue", observedValue);
+        auditLog.trace("Distribute__Observed__{}__{}__{}__{}__{}", observedValue.getClass(), observedValue.getSensorId().getId(), observedValue.getSensorId().getId(),observedValue.getValue(), observedValue.getObservedAt());
 
         SensorId sensorId = observedValue.getSensorId();
         UniqueKey uniqueKey = sensorId.getMappingKey();
@@ -62,8 +65,10 @@ public class ObservationDistributor implements Runnable {
         }
         MappedSensorId mappedSensorId = mappedIds.get(0);
         log.trace("Found mappedSensorId {} for uniqueKey {}", mappedSensorId, uniqueKey);
+        auditLog.trace("Distribute__Mapped__{}__{}__{}__{}__{}", mappedSensorId.getClass(), mappedSensorId.getSensorId().getId(), observedValue.getSensorId().getId(), observedValue.getValue(), observedValue.getObservedAt());
         ObservationMessage observationMessage = ObservationMapper.buildRecObservation(mappedSensorId, observedValue);
         for (DistributionService distributionService : distributionServices) {
+            auditLog.trace("Distribute__Publish__{}__{}__{}__{}__{}", distributionService.getName(), observationMessage.getClass(), sensorId.getId(), observationMessage.getValue(), observationMessage.getObservationTime());
             distributionService.publish(observationMessage);
         }
         addObservedValueDistributedCount();

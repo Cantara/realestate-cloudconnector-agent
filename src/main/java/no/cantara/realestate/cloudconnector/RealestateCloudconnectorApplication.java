@@ -30,6 +30,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class RealestateCloudconnectorApplication extends AbstractStingrayApplication<RealestateCloudconnectorApplication> {
     private static final Logger log = getLogger(RealestateCloudconnectorApplication.class);
+    public static final Logger auditLog = getLogger("AuditLog");
     private boolean enableStream;
     private boolean enableScheduledImport;
 
