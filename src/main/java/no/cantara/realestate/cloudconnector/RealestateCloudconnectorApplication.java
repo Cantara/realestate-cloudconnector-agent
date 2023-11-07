@@ -1,6 +1,8 @@
 package no.cantara.realestate.cloudconnector;
 
 import no.cantara.config.ApplicationProperties;
+import no.cantara.realestate.cloudconnector.ingestion.SimulatorPresentValueIngestionService;
+import no.cantara.realestate.cloudconnector.ingestion.SimulatorTrendsIngestionService;
 import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepository;
 import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepositoryImpl;
 import no.cantara.realestate.cloudconnector.notifications.NotificationService;
@@ -217,9 +219,16 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     void initIngestionController() {
         ServiceLoader<IngestionService> ingestionServicesFound = ServiceLoader.load(IngestionService.class);
 
+        boolean useIngestionSimulator = config.asBoolean("ingestion.simulator.enabled", false);
         for (IngestionService service : ingestionServicesFound) {
             log.info("I've found a Ingestion service called '" + service.getName() + "' !");
-            initIngestionService(service);
+            if (service instanceof SimulatorPresentValueIngestionService || service instanceof SimulatorTrendsIngestionService) {
+                if (useIngestionSimulator) {
+                    initIngestionService(service);
+                }
+            } else {
+                initIngestionService(service);
+            }
         }
         log.info("Found " + ingestionServices.size() + " ingestion services!");
     }

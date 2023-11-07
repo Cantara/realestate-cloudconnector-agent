@@ -89,7 +89,7 @@ public class ScheduledObservationMessageRouter implements MessageRouter {
 
                     }
                 } catch (Exception e) {
-                    log.error("Exception trying to initialize ingestionService {}. Reason: {}", ingestionService, e.getMessage());
+                    log.error("Exception trying to initialize ingesti|onService {}. Reason: {}", ingestionService, e.getMessage());
                 }
             }
             Runnable task1 = () -> {

@@ -19,7 +19,7 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
     private static final Logger log = getLogger(MappedIdRepositoryImpl.class);
 
     public MappedIdRepositoryImpl() {
-        log.warn("********* MappedIdRepositoryImpl created ***********");
+        log.info("MappedIdRepositoryImpl created");
     }
 
     List<MappedSensorId> mappedSensorIds = new ArrayList<>();
