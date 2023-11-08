@@ -210,7 +210,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             List<IngestionService> pluginIngestionServices = pluginFactory.createIngestionServices();
             log.debug("Found {} ingestion services from pluginFactory: {}", pluginIngestionServices.size(), pluginFactory.getDisplayName());
             for (IngestionService service : pluginIngestionServices) {
-                log.info("I've found a Ingestion service called '" + service.getName() + "' !");
+                log.info("{} has a Ingestion service called {}.", pluginFactory.getId(), service.getName());
                 initIngestionService(service);
             }
         }
@@ -221,7 +221,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
         boolean useIngestionSimulator = config.asBoolean("ingestion.simulator.enabled", false);
         for (IngestionService service : ingestionServicesFound) {
-            log.info("I've found a Ingestion service called '" + service.getName() + "' !");
+            log.info("ServiceLoader found a Ingestion service called '" + service.getName() + "' !");
             if (service instanceof SimulatorPresentValueIngestionService || service instanceof SimulatorTrendsIngestionService) {
                 if (useIngestionSimulator) {
                     initIngestionService(service);
@@ -230,10 +230,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
                 initIngestionService(service);
             }
         }
-        log.info("Found " + ingestionServices.size() + " ingestion services!");
+        log.info("ServiceLoader found " + ingestionServices.size() + " ingestion services!");
     }
 
     private void initIngestionService(IngestionService service) {
+        //FIXME how to initialize these when PluginFactories have added these.
         if (ingestionServices == null) {
             ingestionServices = new HashMap<>();
         }
@@ -249,13 +250,13 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
         distributionServices = new HashMap<>();
         for (DistributionService service : distributionServicesFound) {
-            log.info("I've found a  Distribution service called '" + service.getName() + "' !");
+            log.info("ServiceLoader found a Distribution service called {}!", service.getName());
             distributionServices.put(service.getName(), service);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsIngested: ", service::getNumberOfMessagesPublished);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedIngestions: ", service::getNumberOfMessagesFailed);
         }
-        log.info("Found " + distributionServices.size() + " distribution services!");
+        log.info("ServiceLoader found " + distributionServices.size() + " distribution services!");
     }
 
     private void initNotificationServices() {
