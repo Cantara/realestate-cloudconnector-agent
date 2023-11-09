@@ -207,7 +207,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             List<MappedSensorId> mappedSensorIds = pluginFactory.createSensorMappingImporter().importSensorMappings();
             log.debug("Adding {} sensorIds from pluginFactory: {}", mappedSensorIds.size(), pluginFactory.getDisplayName());
             mappedIdRepository.addAll(mappedSensorIds);
-            List<IngestionService> pluginIngestionServices = pluginFactory.createIngestionServices();
+            List<IngestionService> pluginIngestionServices = pluginFactory.createIngestionServices(observationsRepository, notificationListener);
             log.debug("Found {} ingestion services from pluginFactory: {}", pluginIngestionServices.size(), pluginFactory.getDisplayName());
             for (IngestionService service : pluginIngestionServices) {
                 log.info("{} has a Ingestion service called {}.", pluginFactory.getId(), service.getName());
