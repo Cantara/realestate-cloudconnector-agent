@@ -143,25 +143,27 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     protected void subscribeToSensors(boolean useSimulatedSensors) {
-        List<SensorId> sensorIds = new ArrayList<>();
+
         if (useSimulatedSensors) {
+            List<SensorId> simulatedSensorIds = new ArrayList<>();
             SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
-            sensorIds.add(simulatedCo2Sensor);
+            simulatedSensorIds.add(simulatedCo2Sensor);
             SensorId simulatedTempSensor = new SimulatedTempSensor("2");
-            sensorIds.add(simulatedTempSensor);
+            simulatedSensorIds.add(simulatedTempSensor);
+            for (IngestionService ingestionService : ingestionServices.values()) {
+                ingestionService.addSubscriptions(simulatedSensorIds);
+            }
         } else {
             for (IngestionService ingestionService : ingestionServices.values()) {
+                List<SensorId> sensorIds = new ArrayList<>();
                 List<MappedSensorId> mappedSensorIds = findSensorsToSubscribeTo(ingestionService.getName(), ingestionService.getClass());
                 log.debug("Adding {} sensorIds from ingestionService: {}", mappedSensorIds.size(), ingestionService.getName());
                 for (MappedSensorId mappedSensorId : mappedSensorIds) {
                     log.debug("Subscribe to sensorId: {}", mappedSensorId.getSensorId());
                     sensorIds.add(mappedSensorId.getSensorId());
                 }
+                ingestionService.addSubscriptions(sensorIds);
             }
-        }
-
-        for (IngestionService ingestionService : ingestionServices.values()) {
-            ingestionService.addSubscriptions(sensorIds);
         }
     }
 
