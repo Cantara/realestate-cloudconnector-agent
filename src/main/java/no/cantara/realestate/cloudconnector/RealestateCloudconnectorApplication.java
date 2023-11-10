@@ -14,6 +14,7 @@ import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
 import no.cantara.realestate.cloudconnector.status.HealthListener;
+import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
 import no.cantara.realestate.plugins.RealEstatePluginFactory;
 import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.distribution.DistributionService;
@@ -93,6 +94,10 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         subscribeToSensors(useSimulatedSensors);
         initRouter();
         initObservationDistributor();
+
+        //StatusGui
+        init(Random.class, this::createRandom);
+        SystemStatusResource systemStatusResource = initAndRegisterJaxRsWsComponent(SystemStatusResource.class, this::createSystemStatusResource);
         /*
         boolean doImportData = config.asBoolean("import.data");
         enableStream = config.asBoolean("sd.stream.enabled");
@@ -312,6 +317,15 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         }
 
         return mappedIdRepository;
+    }
+
+    private Random createRandom() {
+        return new Random(System.currentTimeMillis());
+    }
+
+    private SystemStatusResource createSystemStatusResource() {
+        Random random = get(Random.class);
+        return new SystemStatusResource(random);
     }
 
 
