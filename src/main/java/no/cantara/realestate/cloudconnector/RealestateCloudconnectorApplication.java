@@ -14,6 +14,7 @@ import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
 import no.cantara.realestate.cloudconnector.status.HealthListener;
+import no.cantara.realestate.cloudconnector.status.RepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
 import no.cantara.realestate.plugins.RealEstatePluginFactory;
 import no.cantara.realestate.plugins.config.PluginConfig;
@@ -26,6 +27,9 @@ import no.cantara.stingray.application.AbstractStingrayApplication;
 import no.cantara.stingray.application.health.StingrayHealthService;
 import no.cantara.stingray.security.StingraySecurity;
 import org.slf4j.Logger;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import java.util.*;
 
@@ -98,6 +102,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         //StatusGui
         init(Random.class, this::createRandom);
         SystemStatusResource systemStatusResource = initAndRegisterJaxRsWsComponent(SystemStatusResource.class, this::createSystemStatusResource);
+        RepositoryResource repositoryResource = initAndRegisterJaxRsWsComponent(RepositoryResource.class, this::creatRepositoryStatusResource);
         /*
         boolean doImportData = config.asBoolean("import.data");
         enableStream = config.asBoolean("sd.stream.enabled");
@@ -145,6 +150,18 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         //Wire up the stream importer
         
 
+    }
+
+    private RepositoryResource creatRepositoryStatusResource() {
+        TemplateEngine templateEngine = new TemplateEngine();
+        ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
+        templateResolver.setTemplateMode(TemplateMode.HTML);
+        templateResolver.setPrefix("/templates/");
+        templateResolver.setSuffix(".html");
+        templateResolver.setCharacterEncoding("UTF-8");
+        templateResolver.setCacheable(false); // Set to true for production
+        templateEngine.setTemplateResolver(templateResolver);
+        return new RepositoryResource(templateEngine, mappedIdRepository);
     }
 
     protected void subscribeToSensors(boolean useSimulatedSensors) {

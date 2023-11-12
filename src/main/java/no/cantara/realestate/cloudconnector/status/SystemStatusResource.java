@@ -6,12 +6,20 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import no.cantara.stingray.security.application.StingrayAction;
+import no.cantara.stingray.security.application.StingraySecurityOverride;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
+import java.io.StringWriter;
 import java.util.Random;
 
 
 @Path("/systemstatus")
 public class SystemStatusResource {
+
+    private boolean isHealty = true;
 
     private final Random random;
 
@@ -20,9 +28,47 @@ public class SystemStatusResource {
     }
 
     @GET
+    @Path("/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    @StingrayAction("status")
+    @StingraySecurityOverride
+    public Status getStatus() {
+        // Assuming Status is a class that represents the status of your components
+
+        Status status = new Status(isHealty);
+        this.isHealty = !isHealty;
+        // Populate status object with current status data
+        return status;
+    }
+
+    @GET
+    @Path("/th")
+    @StingraySecurityOverride
+    public Response useThymeleaf() {
+        TemplateEngine templateEngine = new TemplateEngine();
+        ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
+        templateResolver.setTemplateMode(TemplateMode.HTML);
+        templateResolver.setPrefix("/templates/");
+        templateResolver.setSuffix(".html");
+        templateResolver.setCharacterEncoding("UTF-8");
+        templateResolver.setCacheable(false); // Set to true for production
+        templateEngine.setTemplateResolver(templateResolver);
+
+        Context ctx = new Context();
+        ctx.setVariable("inputServiceStatus", "OK");
+        ctx.setVariable("routerServiceStatus", "OK");
+        ctx.setVariable("outputServiceStatus", "OK");
+        StringWriter stringWriter = new StringWriter();
+        templateEngine.process("SystemStatus", ctx, stringWriter);
+        String html = stringWriter.toString();
+        return Response.ok(html).build();
+    }
+
+    @GET
     @Path("/gui")
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_HTML)
     @StingrayAction("statusgui")
+    @StingraySecurityOverride
     public Response getSystemStatusGui() {
         String html = """
                 <!DOCTYPE html>
@@ -139,6 +185,35 @@ public class SystemStatusResource {
                                 
                     // Update status on page load
                     updateStatus();
+                    // Update status every 5 seconds
+                    function fetchStatus() {
+                      fetch('./status')
+                        .then(response => {
+                          if (!response.ok) {
+                            throw new Error('Network response was not ok ' + response.statusText);
+                          }
+                          return response.json();
+                        })
+                        .then(statusData => {
+                          // Use the status data to update the page
+                          updateComponentStatus('PresentValueIngestion', statusData.presentValueIngestion);
+                          updateComponentStatus('TrendObservationIngestion', statusData.trendObservationIngestion);
+                          updateComponentStatus('MessageRouter', statusData.messageRouter);
+                          updateComponentStatus('MessageDistributor', statusData.messageDistributor);
+                    
+                          // Update arrows if needed
+                          updateArrow('arrow1', statuses.PresentValueIngestion === 'active');
+                          updateArrow('arrow2', statuses.TrendObservationIngestion === 'active');
+                          updateArrow('arrow3', statuses.MessageRouter === 'active');
+                        })
+                        .catch(error => {
+                          console.error('There has been a problem with your fetch operation:', error);
+                        });
+                    }
+                    
+                    // Call fetchStatus at a regular interval
+                    setInterval(fetchStatus, 10000); // Update every 5 seconds, for example
+                    
                   </script>
                 </body>
                 </html>

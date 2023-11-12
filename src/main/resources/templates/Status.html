@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Application Status</title>
+    <!-- Include any CSS or JS here -->
+    <style th:insert="~{../static/styles/cssandjs/main.css}"></style>
+</head>
+<body>
+
+<h1>Application Status Page</h1>
+
+<div>
+    <h2>Service Statuses</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Service</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Input Service</td>
+            <td th:text="${inputServiceStatus}">Status placeholder</td>
+        </tr>
+        <tr>
+            <td>Router Service</td>
+            <td th:text="${routerServiceStatus}">Status placeholder</td>
+        </tr>
+        <tr>
+            <td>Output Service</td>
+            <td th:text="${outputServiceStatus}">Status placeholder</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

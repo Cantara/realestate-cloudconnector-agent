@@ -134,6 +134,12 @@
       <version>${slack-api-client.version}</version>
     </dependency>
 
+    <!-- Status UI -->
+    <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf</artifactId>
+      <version>3.1.2.RELEASE</version>
+    </dependency>
 
     <!-- Test -->
     <dependency>

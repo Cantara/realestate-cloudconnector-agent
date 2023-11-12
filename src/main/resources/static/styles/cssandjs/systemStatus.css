@@ -1,0 +1,42 @@
+#messageFlow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 auto;
+    max-width: 800px;
+}
+
+.component {
+    border: 1px solid #333;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    flex: 1; /* Allows for equal width of components */
+}
+
+.arrow {
+    margin: 0 10px;
+    font-size: 24px;
+}
+
+.active {
+    background-color: #9f9;
+}
+
+.idle {
+    background-color: #ff9;
+}
+
+.error {
+    background-color: #f99;
+}
+
+/* Additional styles for positioning and visual separation */
+.component-group {
+    display: flex;
+    align-items: center;
+}
+.vertical-group {
+    display:flex;
+    flex-direction: column;
+}

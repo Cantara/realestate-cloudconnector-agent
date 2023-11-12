@@ -77,7 +77,7 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
         return mappedSensorIds.size() ;
     }
 
-    protected List<MappedSensorId> getAll() {
+    public List<MappedSensorId> getAll() {
         return mappedSensorIds;
     }
 }
