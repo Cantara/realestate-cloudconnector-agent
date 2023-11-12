@@ -40,7 +40,7 @@ public class RepositoryResource {
     public Response getStatus() {
         long size = mappedIdRepository.size();
         List<MappedSensorId> sensors = ((MappedIdRepositoryImpl)mappedIdRepository).getAll();
-        List<Map<String, String>> sensorList = buildList(sensors);
+        List<Map<String, Object>> sensorList = buildList(sensors);
 
         Context ctx = new Context();
         ctx.setVariable("count", size);
@@ -52,21 +52,23 @@ public class RepositoryResource {
 
     }
 
-    protected List<Map<String, String>> buildList(List<MappedSensorId> sensors) {
-        List<Map<String,String>> sensorDetails = new ArrayList<>();
+    protected List<Map<String, Object>> buildList(List<MappedSensorId> sensors) {
+        List<Map<String,Object>> sensorDetails = new ArrayList<>();
         for (MappedSensorId sensor : sensors) {
-            Map<String, String> sensorDetail = new HashMap<>();
+            Map<String, Object> sensorDetail = new HashMap<>();
             if (sensor.getSensorId() != null) {
                 SensorId sensorId = sensor.getSensorId();
                 sensorDetail.put("type", sensorId.getClass().getSimpleName());
                 sensorDetail.put("sensorId", sensorId.getId());
+                sensorDetail.put("mappingKey", sensor.getSensorId().getMappingKey().getKey().toString());
+                sensorDetail.put("shouldbenull", null);
                 if (sensor.getSensorId() instanceof DesigoSensorId) {
                     sensorDetail.put("desigoId", ((DesigoSensorId) sensorId).getDesigoId());
                     sensorDetail.put("desigoPropertyId", ((DesigoSensorId) sensorId).getDesigoPropertyId());
                     sensorDetail.put("trendId", ((DesigoSensorId) sensorId).getTrendId());
                 }
             }
-            sensorDetail.put("mappingKey", sensor.getSensorId().getMappingKey().getKey().toString());
+
             if (sensor.getRec() != null) {
                 sensorDetail.put("realEstate", sensor.getRec().getRealEstate());
             }
