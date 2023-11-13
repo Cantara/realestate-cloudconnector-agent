@@ -61,7 +61,6 @@ public class RepositoryResource {
                 sensorDetail.put("type", sensorId.getClass().getSimpleName());
                 sensorDetail.put("sensorId", sensorId.getId());
                 sensorDetail.put("mappingKey", sensor.getSensorId().getMappingKey().getKey().toString());
-                sensorDetail.put("shouldbenull", null);
                 if (sensor.getSensorId() instanceof DesigoSensorId) {
                     sensorDetail.put("desigoId", ((DesigoSensorId) sensorId).getDesigoId());
                     sensorDetail.put("desigoPropertyId", ((DesigoSensorId) sensorId).getDesigoPropertyId());

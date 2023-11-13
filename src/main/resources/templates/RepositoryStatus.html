@@ -14,7 +14,7 @@
     <table style="border: solid 1px black;">
         <thead>
         <tr>
-            <th>SensorId</th><th>TrendId</th><th>Type</th>
+            <th>SensorId</th><th>TrendId</th><th>Type</th><th>MappingKey</th>
         </tr>
         </thead>
         <th:block th:each="sensorDetail : ${sensorList}">
@@ -22,6 +22,7 @@
                 <td th:text="${sensorDetail.sensorId}"/>
                 <td th:text="${sensorDetail.trendId}"/>
                 <td th:text="${sensorDetail.type}"/>
+                <td th:text="${sensorDetail.mappingKey}"/>
             </tr>
         </th:block>
     </table>
@@ -37,6 +38,7 @@
                 <td th:text="${property.key}"/>
                 <td th:text="${property.value}"/>
             </tr>
+            <tr><td colspan="2">----</td></tr>
         </th:block>
     </table>
 </div>
