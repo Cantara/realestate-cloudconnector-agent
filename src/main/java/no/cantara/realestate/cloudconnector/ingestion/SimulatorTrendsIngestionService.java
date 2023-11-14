@@ -1,7 +1,7 @@
 package no.cantara.realestate.cloudconnector.ingestion;
 
 import no.cantara.realestate.observations.ObservationListener;
-import no.cantara.realestate.observations.ObservedValue;
+import no.cantara.realestate.observations.ObservedTrendedValue;
 import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.ingestion.PresentValueIngestionService;
 import no.cantara.realestate.plugins.notifications.NotificationListener;
@@ -93,11 +93,11 @@ public class SimulatorTrendsIngestionService implements PresentValueIngestionSer
         int min = 415;
         for (SensorId sensorId : sensorIds) {
             int co2Value = (int) ((Math.random() * (max - min)) + min);
-            ObservedValue olderValue = new ObservedValue(sensorId, co2Value);
+            ObservedTrendedValue olderValue = new ObservedTrendedValue(sensorId, co2Value);
             olderValue.setObservedAt(Instant.now().minusSeconds(60*5));
             observationListener.observedValue(olderValue);
             addIngestionCount();
-            ObservedValue latestValue = new ObservedValue(sensorId, co2Value + 100);
+            ObservedTrendedValue latestValue = new ObservedTrendedValue(sensorId, co2Value + 100);
             observationListener.observedValue(latestValue);
             addIngestionCount();
         }
