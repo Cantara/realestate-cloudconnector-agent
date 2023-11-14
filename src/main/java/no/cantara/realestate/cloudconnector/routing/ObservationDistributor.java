@@ -1,5 +1,8 @@
 package no.cantara.realestate.cloudconnector.routing;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepository;
 import no.cantara.realestate.cloudconnector.semantics.ObservationMapper;
 import no.cantara.realestate.observations.ObservationMessage;
@@ -24,12 +27,23 @@ public class ObservationDistributor implements Runnable {
     private static final long DEFAULT_SLEEP_PERIOD_MS = 100;
     private long sleepPeriod;
     private long observedValueDistributedCount;
+    MetricRegistry metricRegistry;
+    Meter distributedMeter;
 
-    public ObservationDistributor(ObservationsRepository observationsRepository, List<DistributionService> distributionServices, MappedIdRepository mappedIdRepository) {
+    public ObservationDistributor(ObservationsRepository observationsRepository, List<DistributionService> distributionServices, MappedIdRepository mappedIdRepository, MetricRegistry metricRegistry) {
         this.observationsRepository = observationsRepository;
         this.distributionServices = distributionServices;
         this.mappedIdRepository = mappedIdRepository;
         sleepPeriod = DEFAULT_SLEEP_PERIOD_MS;
+        this.metricRegistry = metricRegistry;
+        distributedMeter = metricRegistry.meter("ObservationsDistributed");
+        metricRegistry.register(MetricRegistry.name(ObservationDistributor.class, "ObservationsDistributed", "total"),
+                new Gauge<Long>() {
+                    @Override
+                    public Long getValue() {
+                        return observedValueDistributedCount;
+                    }
+                });
     }
 
     @Override
@@ -69,6 +83,7 @@ public class ObservationDistributor implements Runnable {
         ObservationMessage observationMessage = ObservationMapper.buildRecObservation(mappedSensorId, observedValue);
         for (DistributionService distributionService : distributionServices) {
             auditLog.trace("Distribute__Publish__{}__{}__{}__{}__{}", distributionService.getName(), observationMessage.getClass(), sensorId.getId(), observationMessage.getValue(), observationMessage.getObservationTime());
+            distributedMeter.mark();
             distributionService.publish(observationMessage);
         }
         addObservedValueDistributedCount();

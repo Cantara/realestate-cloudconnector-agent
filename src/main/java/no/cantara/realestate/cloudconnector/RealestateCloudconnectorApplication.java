@@ -1,5 +1,7 @@
 package no.cantara.realestate.cloudconnector;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 import no.cantara.config.ApplicationProperties;
 import no.cantara.realestate.cloudconnector.ingestion.SimulatorPresentValueIngestionService;
 import no.cantara.realestate.cloudconnector.ingestion.SimulatorTrendsIngestionService;
@@ -50,6 +52,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private ObservationDistributor observationDistributor;
     private MappedIdRepository mappedIdRepository;
     private Thread observationDistributorThread;
+    private MetricRegistry metricRegistry;
 
     public RealestateCloudconnectorApplication(ApplicationProperties config) {
         super("RealestateCloudconnector",
@@ -89,6 +92,10 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         boolean useSimulatedSensors = config.asBoolean("sensormappings.simulator.enabled");
         initBuiltinDefaults();
         StingraySecurity.initSecurity(this);
+        metricRegistry = get(MetricRegistry.class);
+        if (metricRegistry == null) {
+            throw new RealestateCloudconnectorException("Missing Metric Registry");
+        }
         mappedIdRepository = createMappedIdRepository(useSimulatedSensors);
         initNotificationServices();
         initObservationReceiver();
@@ -98,6 +105,9 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         subscribeToSensors(useSimulatedSensors);
         initRouter();
         initObservationDistributor();
+
+        //Setup Metrics observation
+        initMetrics();
 
         //StatusGui
         init(Random.class, this::createRandom);
@@ -150,6 +160,16 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         //Wire up the stream importer
         
 
+    }
+
+    private void initMetrics() {
+        metricRegistry.register(MetricRegistry.name(ObservationsRepository.class, "ObservationsQueue", "size"),
+                new Gauge<Long>() {
+                    @Override
+                    public Long getValue() {
+                        return observationsRepository.getObservedValuesQueueSize();
+                    }
+                });
     }
 
     private RepositoryResource creatRepositoryStatusResource() {
@@ -308,7 +328,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.warn("ObservationsRepository is null. Cannot start ObservationDistributor");
             throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
         }
-        observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository);
+        observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository,metricRegistry);
         get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy: ", observationDistributor::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed: ", observationDistributor::getObservedValueDistributedCount);
         observationDistributorThread = new Thread(observationDistributor);

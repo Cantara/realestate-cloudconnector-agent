@@ -13,3 +13,7 @@ Pipe observations from Building Automation Systems to your favorite Cloud Provid
 ingestion.interval.minutes
 sensormappings.simulator.enabled=true
 ```
+
+## Statistics and Metrics
+
+[Metrics](http://localhost:8083/admin/metrics/app/*)
