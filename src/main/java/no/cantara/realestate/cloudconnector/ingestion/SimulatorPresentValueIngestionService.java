@@ -91,6 +91,14 @@ public class SimulatorPresentValueIngestionService implements PresentValueIngest
         for (SensorId sensorId : sensorIds) {
             ObservedValue observedValue = new ObservedValue(sensorId, ((Math.random() * (max - min)) + min));
             observationListener.observedValue(observedValue);
+            addIngestionCount();
         }
+    }
+
+    private void addIngestionCount() {
+        if (numberOfMessagesImported == Long.MAX_VALUE) {
+            numberOfMessagesImported = 0;
+        }
+        numberOfMessagesImported++;
     }
 }

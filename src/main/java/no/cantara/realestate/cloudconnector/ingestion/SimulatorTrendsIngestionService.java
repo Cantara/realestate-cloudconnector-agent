@@ -96,8 +96,16 @@ public class SimulatorTrendsIngestionService implements PresentValueIngestionSer
             ObservedValue olderValue = new ObservedValue(sensorId, co2Value);
             olderValue.setObservedAt(Instant.now().minusSeconds(60*5));
             observationListener.observedValue(olderValue);
+            addIngestionCount();
             ObservedValue latestValue = new ObservedValue(sensorId, co2Value + 100);
             observationListener.observedValue(latestValue);
+            addIngestionCount();
         }
+    }
+    private void addIngestionCount() {
+        if (numberOfMessagesImported == Long.MAX_VALUE) {
+            numberOfMessagesImported = 0;
+        }
+        numberOfMessagesImported++;
     }
 }

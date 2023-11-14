@@ -86,7 +86,6 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     */
 
 
-
     @Override
     protected void doInit() {
         boolean useSimulatedSensors = config.asBoolean("sensormappings.simulator.enabled");
@@ -108,6 +107,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
         //Setup Metrics observation
         initMetrics();
+        initSafeShutdownMetrics();
 
         //StatusGui
         init(Random.class, this::createRandom);
@@ -158,7 +158,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         RandomizerResource randomizerResource = initAndRegisterJaxRsWsComponent(RandomizerResource.class, this::createRandomizerResource);
 */
         //Wire up the stream importer
-        
+
 
     }
 
@@ -170,6 +170,22 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
                         return observationsRepository.getObservedValuesQueueSize();
                     }
                 });
+        metricRegistry.register(MetricRegistry.name(MappedIdRepositoryImpl.class, "MappedIdRepository", "size"),
+                new Gauge<Long>() {
+                    @Override
+                    public Long getValue() {
+                        return mappedIdRepository.size();
+                    }
+                });
+    }
+
+    private void initSafeShutdownMetrics() {
+        metricRegistry.register(MetricRegistry.name("SafeToShutdown"), new Gauge<Boolean>() {
+            @Override
+            public Boolean getValue() {
+                return observationsRepository.getObservedValuesQueueSize() < 1;
+            }
+        });
     }
 
     private RepositoryResource creatRepositoryStatusResource() {
@@ -287,6 +303,27 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-subscriptionsCount: ", service::getSubscriptionsCount);
         get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsIngested: ", service::getNumberOfMessagesImported);
         get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedIngestions: ", service::getNumberOfMessagesFailed);
+        metricRegistry.register(MetricRegistry.name(service.getName(), "SubscriptionsCount", "size"),
+                new Gauge<Long>() {
+                    @Override
+                    public Long getValue() {
+                        return service.getSubscriptionsCount();
+                    }
+                });
+        metricRegistry.register(MetricRegistry.name(service.getName(), "ObservationsIngested", "size"),
+                new Gauge<Long>() {
+                    @Override
+                    public Long getValue() {
+                        return service.getNumberOfMessagesImported();
+                    }
+                });
+        metricRegistry.register(MetricRegistry.name(service.getName(), "FailedObservationIngestions", "size"),
+                new Gauge<Long>() {
+                    @Override
+                    public Long getValue() {
+                        return service.getNumberOfMessagesFailed();
+                    }
+                });
     }
 
     protected void initDistributionController() {
@@ -314,6 +351,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         }
         this.notificationListener = new HealthListener(notificationService);
     }
+
     private void initObservationReceiver() {
         observationsRepository = new ObservationsRepository();
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-isHealthy: ", observationsRepository::isHealthy);
@@ -328,7 +366,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.warn("ObservationsRepository is null. Cannot start ObservationDistributor");
             throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
         }
-        observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository,metricRegistry);
+        observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository, metricRegistry);
         get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy: ", observationDistributor::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed: ", observationDistributor::getObservedValueDistributedCount);
         observationDistributorThread = new Thread(observationDistributor);
@@ -364,7 +402,6 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         Random random = get(Random.class);
         return new SystemStatusResource(random);
     }
-
 
 
 }
