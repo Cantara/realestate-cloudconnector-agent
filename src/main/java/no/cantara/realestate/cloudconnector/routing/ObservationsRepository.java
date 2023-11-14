@@ -1,9 +1,8 @@
 package no.cantara.realestate.cloudconnector.routing;
 
-import no.cantara.realestate.observations.ConfigMessage;
-import no.cantara.realestate.observations.ConfigValue;
-import no.cantara.realestate.observations.ObservationListener;
-import no.cantara.realestate.observations.ObservedValue;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import no.cantara.realestate.observations.*;
 import org.slf4j.Logger;
 
 import java.util.concurrent.LinkedBlockingDeque;
@@ -15,18 +14,36 @@ public class ObservationsRepository implements ObservationListener {
     private static final Logger log = getLogger(ObservationsRepository.class);
 
     public static final int MAX_CONCURRENT_OBSERVATIONS = 10000;
+    ;
 
     private long observedValueCount = 0;
     private long observedConfigValueCount = 0;
     private long observedConfigMessageCount = 0;
-    LinkedBlockingDeque<ObservedValue> observedValuesQueue;
+    private LinkedBlockingDeque<ObservedValue> observedValuesQueue;
 
-    public ObservationsRepository() {
-       this(MAX_CONCURRENT_OBSERVATIONS);
+    private MetricRegistry metricRegistry;
+    private Meter observedConfigValueMeter;
+    private Meter observedConfigMessageMeter;
+    private Meter observedValueReceivedMeter;
+    private Meter presentValueReceived;
+    private final Meter trendedValueReceivedMeter;
+    private final Meter streamValueReceivedMeter;
+
+
+    public ObservationsRepository(MetricRegistry metricRegistry) {
+       this(MAX_CONCURRENT_OBSERVATIONS, metricRegistry);
     }
-    public ObservationsRepository(int maxConcurrentObservations) {
+    public ObservationsRepository(int maxConcurrentObservations, MetricRegistry metricRegistry) {
+        this.metricRegistry = metricRegistry;
         log.info("Creating ObservedValues queue with maxConcurrentObservations={}", maxConcurrentObservations);
         observedValuesQueue = new LinkedBlockingDeque<>(maxConcurrentObservations);
+        this.metricRegistry = metricRegistry;
+        presentValueReceived = metricRegistry.meter("PresentValueObservationReceived");
+        trendedValueReceivedMeter = metricRegistry.meter("TrendedValueObservationReceived");
+        streamValueReceivedMeter = metricRegistry.meter("StreamValueObservationReceived");
+        observedConfigValueMeter = metricRegistry.meter("ConfigReceived");
+        observedConfigMessageMeter = metricRegistry.meter("ConfigMessageReceived");
+        observedValueReceivedMeter = metricRegistry.meter("ObservationReceived");
     }
 
     @Override
@@ -38,6 +55,17 @@ public class ObservationsRepository implements ObservationListener {
             log.trace("Add to observedQueue {}", observedValue);
             isObserved = observedValuesQueue.offer(observedValue, 1, TimeUnit.MILLISECONDS);
             log.trace("Attempt to add {}, estimated totalSize {}, was added [{}]", observedValue, observedValuesQueue.size(), isObserved);
+            if (isObserved) {
+                if (observedValue instanceof ObservedPresentValue) {
+                    presentValueReceived.mark();
+                } else if (observedValue instanceof ObservedTrendedValue) {
+                    trendedValueReceivedMeter.mark();
+                } else if (observedValue instanceof ObservedStreamValue) {
+                    streamValueReceivedMeter.mark();
+                } else {
+                    observedValueReceivedMeter.mark();
+                }
+            }
         } catch (InterruptedException e) {
             log.warn("Could not add observedValue {}",observedValue, e);
         }
@@ -63,12 +91,14 @@ public class ObservationsRepository implements ObservationListener {
     public void observedConfigValue(ConfigValue configValue) {
         log.trace("Observed config value: {}", configValue);
         addObservedConfigValueCount();
+        observedConfigValueMeter.mark();
     }
 
     @Override
     public void observedConfigMessage(ConfigMessage configMessage) {
         log.trace("Observed config message: {}", configMessage);
         addObservedConfigMessageCount();
+        observedConfigMessageMeter.mark();
     }
 
     public long getObservedValueCount() {

@@ -353,7 +353,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     private void initObservationReceiver() {
-        observationsRepository = new ObservationsRepository();
+        observationsRepository = new ObservationsRepository(metricRegistry);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-isHealthy: ", observationsRepository::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-received: ", observationsRepository::getObservedValueCount);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValuesQueue-size: ", observationsRepository::getObservedValuesQueueSize);
