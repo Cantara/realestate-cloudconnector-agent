@@ -3,6 +3,7 @@ package no.cantara.realestate.cloudconnector.routing;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import no.cantara.realestate.RealEstateException;
 import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepository;
 import no.cantara.realestate.cloudconnector.semantics.ObservationMapper;
 import no.cantara.realestate.observations.ObservationMessage;
@@ -29,6 +30,7 @@ public class ObservationDistributor implements Runnable {
     private long observedValueDistributedCount;
     MetricRegistry metricRegistry;
     Meter distributedMeter;
+    private boolean healthy = true;
 
     public ObservationDistributor(ObservationsRepository observationsRepository, List<DistributionService> distributionServices, MappedIdRepository mappedIdRepository, MetricRegistry metricRegistry) {
         this.observationsRepository = observationsRepository;
@@ -50,18 +52,27 @@ public class ObservationDistributor implements Runnable {
     public void run() {
         log.info("Starting ObservationDistributor");
         do {
-            while (observationsRepository.hasObservedValues()) {
-                ObservedValue observedValue = observationsRepository.takeFirstObservedValue();
-                addSemanticsAndDistribute(observedValue);
-            }
             try {
+                while (observationsRepository.hasObservedValues()) {
+                    ObservedValue observedValue = observationsRepository.takeFirstObservedValue();
+                    addSemanticsAndDistribute(observedValue);
+                }
                 Thread.sleep(sleepPeriod);
+            } catch (RealEstateException e) {
+                this.setHealthy(false);
+                log.warn("Failed to distribute observedValue", e);
             } catch (InterruptedException e) {
                 //Interupted sleep. No probblem, and ignored.
             }
         } while (true);
 
     }
+
+    public void setHealthy(boolean healty) {
+        this.healthy = healty;
+    }
+
+
 
     protected void addSemanticsAndDistribute(ObservedValue observedValue) {
         log.trace("Fetched observedValue {} from the queue", observedValue);
@@ -102,7 +113,6 @@ public class ObservationDistributor implements Runnable {
     }
 
     public boolean isHealthy() {
-        //TODO Should check that all distributionServices are healthy, and that the queue is not growing.
-        return true;
+        return healthy;
     }
 }
