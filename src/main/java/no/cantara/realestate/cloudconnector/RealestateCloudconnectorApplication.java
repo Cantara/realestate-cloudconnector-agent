@@ -334,8 +334,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.info("ServiceLoader found a Distribution service called {}!", service.getName());
             distributionServices.put(service.getName(), service);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsIngested: ", service::getNumberOfMessagesPublished);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedIngestions: ", service::getNumberOfMessagesFailed);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsDistributed: ", service::getNumberOfMessagesPublished);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedDistributed: ", service::getNumberOfMessagesFailed);
         }
         log.info("ServiceLoader found " + distributionServices.size() + " distribution services!");
     }
