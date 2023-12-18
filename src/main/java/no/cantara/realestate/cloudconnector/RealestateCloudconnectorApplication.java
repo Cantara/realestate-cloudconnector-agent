@@ -332,6 +332,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         distributionServices = new HashMap<>();
         for (DistributionService service : distributionServicesFound) {
             log.info("ServiceLoader found a Distribution service called {}!", service.getName());
+            service.initialize(null);
             distributionServices.put(service.getName(), service);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsDistributed: ", service::getNumberOfMessagesPublished);
