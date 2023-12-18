@@ -42,6 +42,16 @@ public class SystemStatusResource {
     }
 
     @GET
+    @Path("/healhcheck")
+    @StingrayAction("healthcheck")
+    @StingraySecurityOverride
+    public Response getHeathChec() {
+        // Assuming Status is a class that represents the status of your components
+
+        return Response.serverError().build();
+    }
+
+    @GET
     @Path("/th")
     @StingraySecurityOverride
     public Response useThymeleaf() {
