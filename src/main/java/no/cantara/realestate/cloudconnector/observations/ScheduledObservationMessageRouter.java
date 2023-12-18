@@ -89,7 +89,7 @@ public class ScheduledObservationMessageRouter implements MessageRouter {
 
                     }
                 } catch (Exception e) {
-                    log.error("Exception trying to initialize ingesti|onService {}. Reason: {}", ingestionService, e.getMessage());
+                    log.error("Exception trying to initialize ingestionService {}. Reason: {}", ingestionService, e.getMessage());
                 }
             }
             Runnable task1 = () -> {
@@ -105,7 +105,7 @@ public class ScheduledObservationMessageRouter implements MessageRouter {
                             }
 
                         } catch (Exception e) {
-                            log.info("Exception trying to run scheduled imports of observations for {}. Reason: {}", ingestionService.getName(), e.getMessage());
+                            log.info("Exception trying to run scheduled imports of observations for {}. Reason: {}", ingestionService.getName(), e.getMessage(), e);
                         }
                     }
                     log.info("Now waiting {} seconds for next scheduled run at: {}", ingestionIntervalSec, Instant.now().plusSeconds(ingestionIntervalSec));

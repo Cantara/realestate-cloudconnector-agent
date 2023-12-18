@@ -21,9 +21,8 @@ public class SimulatorDistributionService implements DistributionService {
     }
 
     @Override
-    public boolean publish(ObservationMessage observationMessage) {
+    public void publish(ObservationMessage observationMessage) {
         numberOfMessagesPublished++;
-        return true;
     }
 
     @Override
