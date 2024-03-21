@@ -13,13 +13,15 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 
+import static no.cantara.realestate.utils.StringUtils.hasValue;
+
 public class ObservationMapper {
 
     public static ObservationMessage buildRecObservation(MappedSensorId mappedSensorId, ObservedValue trendSample) {
         ObservationMessageBuilder builder = new ObservationMessageBuilder();
         SensorRecObject rec = mappedSensorId.getRec();
         SensorId sensorId = mappedSensorId.getSensorId();
-        if (sensorId.getId() != null && sensorId.getId().isEmpty()) {
+        if (hasValue(sensorId.getId())) {
             builder.withSensorId(sensorId.getId());
         } else {
             builder.withSensorId(rec.getRecId());
