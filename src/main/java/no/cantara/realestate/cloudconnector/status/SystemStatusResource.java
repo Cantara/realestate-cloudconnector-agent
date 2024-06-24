@@ -42,7 +42,7 @@ public class SystemStatusResource {
     }
 
     @GET
-    @Path("/healhcheck")
+    @Path("/healthcheck")
     @StingrayAction("healthcheck")
     @StingraySecurityOverride
     public Response getHeathChec() {

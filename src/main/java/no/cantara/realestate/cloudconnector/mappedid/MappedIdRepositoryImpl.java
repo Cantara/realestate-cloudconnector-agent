@@ -57,6 +57,7 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
     }
 
     public List<MappedSensorId> find(MappedIdQuery mappedIdQuery) {
+        log.debug("Find from {}", mappedIdQuery);
         Predicate<MappedSensorId> predicate = mappedIdQuery.getPredicate();
         List<MappedSensorId> matching = mappedSensorIds.stream()
                 .filter(predicate)

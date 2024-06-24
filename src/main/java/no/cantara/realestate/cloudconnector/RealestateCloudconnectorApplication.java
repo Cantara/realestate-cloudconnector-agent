@@ -228,8 +228,25 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     protected List<MappedSensorId> findSensorsToSubscribeTo(String ingestionServiceName, Class<? extends IngestionService> ingestionClass) {
         //FIXME need propper implementation with query bassed on ingestionServiceName
         String realestatesToImport = config.get("importsensorsQuery.realestates");
-        MappedIdQuery idQuery = new MappedIdQueryBuilder().realEstate(realestatesToImport).build();
-        List<MappedSensorId> mappedSensorIds = mappedIdRepository.find(idQuery);
+        List<MappedSensorId> mappedSensorIds = new ArrayList<>();
+        List<String> importAllFromRealestates = findListOfRealestatesToImportFrom();
+        log.info("Importallres: {}", realestatesToImport);
+        if (importAllFromRealestates != null && importAllFromRealestates.size() > 0) {
+            for (String realestate : importAllFromRealestates) {
+                MappedIdQuery idQuery = new MappedIdQueryBuilder().realEstate(realestate).build();
+                log.debug("Querying for MappedSensorIds with query: {} from realestate: {}", idQuery, realestate);
+                try {
+                    List<MappedSensorId> sensorIds = mappedIdRepository.find(idQuery);
+                    log.debug("Found {} MappedSensorIds from realestate: {}", sensorIds.size(), realestate);
+                    if (sensorIds != null) {
+                        mappedSensorIds.addAll(sensorIds);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to find MappedSensorIds from realestate: {}", realestate, e);
+                }
+            }
+        }
+
         return mappedSensorIds;
     }
 
@@ -373,6 +390,19 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         observationDistributorThread = new Thread(observationDistributor);
         observationDistributorThread.start();
         log.trace("Started ObservationDistributor thread");
+        /*
+          //Register health checks
+            get(StingrayHealthService.class).registerHealthCheck(streamClient.getName() + ".isLoggedIn", new HealthCheck() {
+                @Override
+                protected Result check() throws Exception {
+                    if (streamClient.isHealthy() && streamClient.isLoggedIn()) {
+                        return Result.healthy();
+                    } else {
+                        return Result.unhealthy(streamClient.getName() + " is not logged in. ");
+                    }
+                }
+            });
+         */
     }
 
 
@@ -393,6 +423,19 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         }
 
         return mappedIdRepository;
+    }
+
+    protected List<String> findListOfRealestatesToImportFrom() {
+        List<String> realEstates = null;
+        try {
+            String reCsvSplitted = config.get("importsensorsQuery.realestates");
+            if (reCsvSplitted != null) {
+                realEstates = Arrays.asList(reCsvSplitted.split(","));
+            }
+        } catch (Exception e) {
+            log.warn("Failed to read list of RealEstates used for import.", e);
+        }
+        return realEstates;
     }
 
     private Random createRandom() {
