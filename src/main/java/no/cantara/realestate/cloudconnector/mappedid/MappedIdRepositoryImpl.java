@@ -53,6 +53,9 @@ public class MappedIdRepositoryImpl implements MappedIdRepository {
                         .collect(Collectors.toList());
             }
         }
+        if (matching == null || matching.isEmpty()) {
+            log.debug("No matching MappedSensorId found for {}. Please verify that \"Tfm\" and \"Rec\" has values.", mappingKey);
+        }
         return matching;
     }
 
