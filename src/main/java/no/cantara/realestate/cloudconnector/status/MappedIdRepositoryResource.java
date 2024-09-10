@@ -21,13 +21,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Path("/repository")
-public class RepositoryResource {
+@Path("/mappedids")
+public class MappedIdRepositoryResource {
 
     private final MappedIdRepository mappedIdRepository;
     private final TemplateEngine templateEngine;
 
-    public RepositoryResource(TemplateEngine templateEngine, MappedIdRepository mappedIdRepository) {
+    public MappedIdRepositoryResource(TemplateEngine templateEngine, MappedIdRepository mappedIdRepository) {
         this.templateEngine = templateEngine;
         this.mappedIdRepository = mappedIdRepository;
     }
@@ -75,4 +75,5 @@ public class RepositoryResource {
         }
         return sensorDetails;
     }
+
 }

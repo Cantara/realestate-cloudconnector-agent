@@ -4,6 +4,8 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheck;
 import no.cantara.config.ApplicationProperties;
+import no.cantara.realestate.cloudconnector.sensorid.InMemorySensorIdRepository;
+import no.cantara.realestate.cloudconnector.sensorid.SensorIdRepository;
 import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorPresentValueIngestionService;
 import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorTrendsIngestionService;
 import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepository;
@@ -17,7 +19,8 @@ import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedTempSensor;
 import no.cantara.realestate.cloudconnector.status.HealthListener;
-import no.cantara.realestate.cloudconnector.status.RepositoryResource;
+import no.cantara.realestate.cloudconnector.status.MappedIdRepositoryResource;
+import no.cantara.realestate.cloudconnector.status.SensorIdsRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
 import no.cantara.realestate.plugins.RealEstatePluginFactory;
 import no.cantara.realestate.plugins.config.PluginConfig;
@@ -52,6 +55,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private ObservationsRepository observationsRepository;
     private ObservationDistributor observationDistributor;
     private MappedIdRepository mappedIdRepository;
+    private SensorIdRepository sensorIdRepository;
     private Thread observationDistributorThread;
     private MetricRegistry metricRegistry;
 
@@ -97,6 +101,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             throw new RealestateCloudconnectorException("Missing Metric Registry");
         }
         mappedIdRepository = createMappedIdRepository(useSimulatedSensors);
+        sensorIdRepository = createSensorIdRepository(useSimulatedSensors);
         initNotificationServices();
         initObservationReceiver();
         initDistributionController();
@@ -113,7 +118,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         //StatusGui
         init(Random.class, this::createRandom);
         SystemStatusResource systemStatusResource = initAndRegisterJaxRsWsComponent(SystemStatusResource.class, this::createSystemStatusResource);
-        RepositoryResource repositoryResource = initAndRegisterJaxRsWsComponent(RepositoryResource.class, this::createRepositoryStatusResource);
+        MappedIdRepositoryResource mappedIdRepositoryResource = initAndRegisterJaxRsWsComponent(MappedIdRepositoryResource.class, this::createMappedIdRepositoryStatusResource);
+        SensorIdsRepositoryResource sensorIdRepositoryResource = initAndRegisterJaxRsWsComponent(SensorIdsRepositoryResource.class, this::createSensorIdRepositoryResource);
         /*
         boolean doImportData = config.asBoolean("import.data");
         enableStream = config.asBoolean("sd.stream.enabled");
@@ -189,7 +195,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         });
     }
 
-    private RepositoryResource createRepositoryStatusResource() {
+    private MappedIdRepositoryResource createMappedIdRepositoryStatusResource() {
         TemplateEngine templateEngine = new TemplateEngine();
         ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
         templateResolver.setTemplateMode(TemplateMode.HTML);
@@ -198,8 +204,21 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         templateResolver.setCharacterEncoding("UTF-8");
         templateResolver.setCacheable(false); // Set to true for production
         templateEngine.setTemplateResolver(templateResolver);
-        return new RepositoryResource(templateEngine, mappedIdRepository);
+        return new MappedIdRepositoryResource(templateEngine, mappedIdRepository);
     }
+
+    private SensorIdsRepositoryResource createSensorIdRepositoryResource() {
+        TemplateEngine templateEngine = new TemplateEngine();
+        ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
+        templateResolver.setTemplateMode(TemplateMode.HTML);
+        templateResolver.setPrefix("/templates/");
+        templateResolver.setSuffix(".html");
+        templateResolver.setCharacterEncoding("UTF-8");
+        templateResolver.setCacheable(false); // Set to true for production
+        templateEngine.setTemplateResolver(templateResolver);
+        return new SensorIdsRepositoryResource(templateEngine, sensorIdRepository);
+    }
+    //createSensorIdRepositoryResource
 
     protected void subscribeToSensors(boolean useSimulatedSensors) {
 
@@ -434,6 +453,21 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         }
 
         return mappedIdRepository;
+    }
+
+    protected SensorIdRepository createSensorIdRepository(boolean useSimulatedSensors) {
+        SensorIdRepository sensorIdRepository = new InMemorySensorIdRepository();
+        get(StingrayHealthService.class).registerHealthProbe("SensorIdRepository-size: ", sensorIdRepository::size);
+        if (useSimulatedSensors) {
+            log.warn("Using simulated SensorId's");
+            List<SensorId> sensorIds = new ArrayList<>();
+            SensorId simulatedCo2Sensor = new SimulatedCo2Sensor("1");
+            sensorIdRepository.add(simulatedCo2Sensor);
+            SensorId simulatedTempSensor = new SimulatedTempSensor("2");
+            sensorIdRepository.add(simulatedTempSensor);
+        }
+
+        return sensorIdRepository;
     }
 
     protected List<String> findListOfRealestatesToImportFrom() {
