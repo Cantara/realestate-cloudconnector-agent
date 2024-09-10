@@ -14,7 +14,6 @@ public class ObservationsRepository implements ObservationListener {
     private static final Logger log = getLogger(ObservationsRepository.class);
 
     public static final int MAX_CONCURRENT_OBSERVATIONS = 10000;
-    ;
 
     private long observedValueCount = 0;
     private long observedConfigValueCount = 0;

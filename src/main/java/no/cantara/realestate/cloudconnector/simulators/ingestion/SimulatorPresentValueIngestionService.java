@@ -1,4 +1,4 @@
-package no.cantara.realestate.cloudconnector.ingestion;
+package no.cantara.realestate.cloudconnector.simulators.ingestion;
 
 import no.cantara.realestate.observations.ObservationListener;
 import no.cantara.realestate.observations.ObservedPresentValue;

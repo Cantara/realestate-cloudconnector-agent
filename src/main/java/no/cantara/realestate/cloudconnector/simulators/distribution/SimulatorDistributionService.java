@@ -1,4 +1,4 @@
-package no.cantara.realestate.cloudconnector.distribution;
+package no.cantara.realestate.cloudconnector.simulators.distribution;
 
 import no.cantara.realestate.observations.ObservationMessage;
 import no.cantara.realestate.plugins.distribution.DistributionService;

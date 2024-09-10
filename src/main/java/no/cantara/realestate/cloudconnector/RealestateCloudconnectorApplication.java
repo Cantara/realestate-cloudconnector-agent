@@ -2,9 +2,10 @@ package no.cantara.realestate.cloudconnector;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheck;
 import no.cantara.config.ApplicationProperties;
-import no.cantara.realestate.cloudconnector.ingestion.SimulatorPresentValueIngestionService;
-import no.cantara.realestate.cloudconnector.ingestion.SimulatorTrendsIngestionService;
+import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorPresentValueIngestionService;
+import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorTrendsIngestionService;
 import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepository;
 import no.cantara.realestate.cloudconnector.mappedid.MappedIdRepositoryImpl;
 import no.cantara.realestate.cloudconnector.notifications.NotificationService;
@@ -13,8 +14,8 @@ import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMes
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
 import no.cantara.realestate.cloudconnector.routing.ObservationDistributor;
 import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
-import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedCo2Sensor;
-import no.cantara.realestate.cloudconnector.sensors.simulated.SimulatedTempSensor;
+import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedCo2Sensor;
+import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedTempSensor;
 import no.cantara.realestate.cloudconnector.status.HealthListener;
 import no.cantara.realestate.cloudconnector.status.RepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
@@ -112,7 +113,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         //StatusGui
         init(Random.class, this::createRandom);
         SystemStatusResource systemStatusResource = initAndRegisterJaxRsWsComponent(SystemStatusResource.class, this::createSystemStatusResource);
-        RepositoryResource repositoryResource = initAndRegisterJaxRsWsComponent(RepositoryResource.class, this::creatRepositoryStatusResource);
+        RepositoryResource repositoryResource = initAndRegisterJaxRsWsComponent(RepositoryResource.class, this::createRepositoryStatusResource);
         /*
         boolean doImportData = config.asBoolean("import.data");
         enableStream = config.asBoolean("sd.stream.enabled");
@@ -188,7 +189,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         });
     }
 
-    private RepositoryResource creatRepositoryStatusResource() {
+    private RepositoryResource createRepositoryStatusResource() {
         TemplateEngine templateEngine = new TemplateEngine();
         ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
         templateResolver.setTemplateMode(TemplateMode.HTML);
@@ -354,6 +355,16 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsDistributed: ", service::getNumberOfMessagesPublished);
             get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedDistributed: ", service::getNumberOfMessagesFailed);
+            get(StingrayHealthService.class).registerHealthCheck(service.getName() + "-isHealthy:", new HealthCheck() {
+                @Override
+                protected HealthCheck.Result check() throws Exception {
+                    if (service.isHealthy()) {
+                        return Result.healthy();
+                    } else {
+                        return Result.unhealthy(service.getName() + " Failed on connection or login ");
+                    }
+                }
+            });
         }
         log.info("ServiceLoader found " + distributionServices.size() + " distribution services!");
     }

@@ -1,4 +1,4 @@
-package no.cantara.realestate.cloudconnector.sensors.simulated;
+package no.cantara.realestate.cloudconnector.simulators.sensors;
 
 import no.cantara.realestate.sensors.SensorId;
 

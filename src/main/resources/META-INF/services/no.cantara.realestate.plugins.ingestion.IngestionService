@@ -1,2 +1,2 @@
-no.cantara.realestate.cloudconnector.ingestion.SimulatorPresentValueIngestionService
-no.cantara.realestate.cloudconnector.ingestion.SimulatorTrendsIngestionService
+no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorPresentValueIngestionService
+no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorTrendsIngestionService
