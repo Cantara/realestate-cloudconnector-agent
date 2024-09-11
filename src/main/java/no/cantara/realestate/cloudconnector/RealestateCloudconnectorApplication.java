@@ -66,6 +66,13 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         );
     }
 
+    public RealestateCloudconnectorApplication(ApplicationProperties config, String groupId, String artifactId) {
+        super("RealestateCloudconnector",
+                readMetaInfMavenPomVersion(groupId, artifactId),
+                config
+        );
+    }
+
 
     public static void main(String[] args) {
         ApplicationProperties config = new RealestateCloudconnectorApplicationFactory()
@@ -89,6 +96,10 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         }
     }
     */
+
+    public void importSensorIds() {
+
+    }
 
 
     @Override
@@ -166,7 +177,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 */
         //Wire up the stream importer
 
-
+        importSensorIds();
     }
 
     private void initMetrics() {
