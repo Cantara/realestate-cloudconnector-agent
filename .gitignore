@@ -35,7 +35,9 @@ local_config.properties
 local_override.properties
 
 # Runtime config to be ignored
-import-data/
+import-data/*
 ii/
-
+config/*
+dep.txt
 /dependency-reduced-pom.xml
+

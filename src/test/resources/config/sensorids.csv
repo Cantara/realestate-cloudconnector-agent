@@ -1,0 +1,5 @@
+SensorId,SensorSystem,Identificator
+Sensor-abc-def,Simulator,abdd-ef
+Sensor-def-102,metasys,567-890
+Sensor-345-aed, metasys,metasysObjectId:6789-adf
+Sensor-567-ddf,desigo,objectid:5679dd;propertyvalue:presentValue
