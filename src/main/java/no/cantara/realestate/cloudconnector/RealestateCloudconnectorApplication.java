@@ -113,6 +113,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         }
         mappedIdRepository = createMappedIdRepository(useSimulatedSensors);
         sensorIdRepository = createSensorIdRepository(useSimulatedSensors);
+        put(SensorIdRepository.class, sensorIdRepository);
         initNotificationServices();
         initObservationReceiver();
         initDistributionController();
