@@ -5,6 +5,7 @@ import com.codahale.metrics.MetricRegistry;
 import no.cantara.realestate.observations.*;
 import org.slf4j.Logger;
 
+import java.time.Instant;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +28,7 @@ public class ObservationsRepository implements ObservationListener {
     private Meter presentValueReceived;
     private final Meter trendedValueReceivedMeter;
     private final Meter streamValueReceivedMeter;
+    private Instant lastObservedTime;
 
 
     public ObservationsRepository(MetricRegistry metricRegistry) {
@@ -55,6 +57,7 @@ public class ObservationsRepository implements ObservationListener {
             isObserved = observedValuesQueue.offer(observedValue, 1, TimeUnit.MILLISECONDS);
             log.trace("Attempt to add {}, estimated totalSize {}, was added [{}]", observedValue, observedValuesQueue.size(), isObserved);
             if (isObserved) {
+                updateLastObservedTime();
                 if (observedValue instanceof ObservedPresentValue) {
                     presentValueReceived.mark();
                 } else if (observedValue instanceof ObservedTrendedValue) {
@@ -69,6 +72,7 @@ public class ObservationsRepository implements ObservationListener {
             log.warn("Could not add observedValue {}",observedValue, e);
         }
     }
+
     public boolean hasObservedValues() {
         boolean hasObservations = observedValuesQueue.size() > 0;
         //log.debug("hasObservations {}", hasObservations);
@@ -99,6 +103,8 @@ public class ObservationsRepository implements ObservationListener {
         addObservedConfigMessageCount();
         observedConfigMessageMeter.mark();
     }
+
+
 
     public long getObservedValueCount() {
         return observedValueCount;
@@ -150,5 +156,14 @@ public class ObservationsRepository implements ObservationListener {
 
     public long getObservedValuesQueueSize() {
         return observedValuesQueue.size();
+    }
+
+    protected synchronized void updateLastObservedTime() {
+        lastObservedTime = Instant.ofEpochMilli(System.currentTimeMillis());
+    }
+
+    @Override
+    public Instant getWhenLastMessageObserved() {
+        return lastObservedTime;
     }
 }

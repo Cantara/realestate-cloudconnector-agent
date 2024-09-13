@@ -20,6 +20,7 @@ public class SimulatorTrendsIngestionService implements PresentValueIngestionSer
     private List<SensorId> sensorIds = new ArrayList<>();
     private ObservationListener observationListener;
     private NotificationListener notificationListener;
+    private Instant lastImportedTime;
 
     @Override
     public String getName() {
@@ -100,6 +101,7 @@ public class SimulatorTrendsIngestionService implements PresentValueIngestionSer
             ObservedTrendedValue latestValue = new ObservedTrendedValue(sensorId, co2Value + 100);
             observationListener.observedValue(latestValue);
             addIngestionCount();
+            updateLastImportedTime();
         }
     }
     private void addIngestionCount() {
@@ -108,4 +110,14 @@ public class SimulatorTrendsIngestionService implements PresentValueIngestionSer
         }
         numberOfMessagesImported++;
     }
+
+    protected synchronized void updateLastImportedTime() {
+        lastImportedTime = Instant.ofEpochMilli(System.currentTimeMillis());
+    }
+
+    @Override
+    public Instant getWhenLastMessageImported() {
+        return lastImportedTime;
+    }
+
 }

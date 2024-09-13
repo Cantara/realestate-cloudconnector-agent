@@ -7,6 +7,7 @@ import no.cantara.realestate.plugins.ingestion.PresentValueIngestionService;
 import no.cantara.realestate.plugins.notifications.NotificationListener;
 import no.cantara.realestate.sensors.SensorId;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class SimulatorPresentValueIngestionService implements PresentValueIngest
     private List<SensorId> sensorIds = new ArrayList<>();
     private ObservationListener observationListener;
     private NotificationListener notificationListener;
+    private Instant lastImportedTime;
 
     @Override
     public String getName() {
@@ -92,6 +94,7 @@ public class SimulatorPresentValueIngestionService implements PresentValueIngest
             ObservedPresentValue observedValue = new ObservedPresentValue(sensorId, ((Math.random() * (max - min)) + min));
             observationListener.observedValue(observedValue);
             addIngestionCount();
+            updateLastImportedTime();
         }
     }
 
@@ -100,5 +103,14 @@ public class SimulatorPresentValueIngestionService implements PresentValueIngest
             numberOfMessagesImported = 0;
         }
         numberOfMessagesImported++;
+    }
+
+    protected synchronized void updateLastImportedTime() {
+        lastImportedTime = Instant.ofEpochMilli(System.currentTimeMillis());
+    }
+
+    @Override
+    public Instant getWhenLastMessageImported() {
+        return lastImportedTime;
     }
 }
