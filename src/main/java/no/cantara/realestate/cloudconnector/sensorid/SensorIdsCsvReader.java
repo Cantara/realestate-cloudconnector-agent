@@ -11,6 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +51,10 @@ public class SensorIdsCsvReader {
         List<SensorId> sensorIds = new ArrayList<>();
 
         try {
+            if (!Files.exists(Paths.get(filePath))) {
+                log.warn("SensorIds file not found: {}", filePath);
+                return sensorIds;
+            }
             CsvCollection csvCollection = CsvReader.parse(filePath);
             csvCollection.getRecords().forEach(record -> {
                 String sensorIdValue = record.get("SensorId");

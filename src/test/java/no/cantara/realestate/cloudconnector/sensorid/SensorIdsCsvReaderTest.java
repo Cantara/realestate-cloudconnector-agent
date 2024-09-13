@@ -18,7 +18,7 @@ class SensorIdsCsvReaderTest {
 
     @Test
     void parseSensorIds() {
-        String filePath = getClass().getResource("/config/sensorids.csv").getPath();
+        String filePath = getClass().getResource("/config/validateSensorids.csv").getPath();
         assertTrue(Files.exists(Paths.get(filePath)),"File is not acessible " + filePath);
         List<SensorId> sensorIds = SensorIdsCsvReader.parseSensorIds(filePath);
         assertNotNull(sensorIds);
