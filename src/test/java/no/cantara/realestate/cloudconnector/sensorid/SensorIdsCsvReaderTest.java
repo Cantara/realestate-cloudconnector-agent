@@ -28,4 +28,32 @@ class SensorIdsCsvReaderTest {
         SensorId expectedSensorId = new SensorId("Sensor-def-102", SensorSystem.metasys, Map.of("metasysObjectId","567-890"));
         assertTrue(sensorIds.contains(expectedSensorId));
     }
+
+    @Test
+    void validateDesigoIdentifiers() {
+        String desigoIdentifiers = "desigoId:System1:GmsDevice_2_101444_12165555;desigoPropertyId:RAQual_Present_Value";
+        Map record = Map.of(SensorIdsCsvReader.HEADER_IDENTIFICATOR, desigoIdentifiers);
+        Map<String, String> identifiers = SensorIdsCsvReader.findIdentifiers("desigoId", record);
+        assertEquals(2, identifiers.size());
+        assertEquals("System1:GmsDevice_2_101444_12165555", identifiers.get("desigoId"));
+        assertEquals("RAQual_Present_Value", identifiers.get("desigoPropertyId"));
+    }
+
+    @Test
+    void singleIdentifier() {
+        String singleIdentifier = "metasysObjectId:567-890";
+        Map record = Map.of(SensorIdsCsvReader.HEADER_IDENTIFICATOR, singleIdentifier);
+        Map<String, String> identifiers = SensorIdsCsvReader.findIdentifiers("metasysObjectId", record);
+        assertEquals(1, identifiers.size());
+        assertEquals("567-890", identifiers.get("metasysObjectId"));
+    }
+
+    @Test
+    void emptyIdentifier() {
+        String singleIdentifier = "567-890";
+        Map record = Map.of(SensorIdsCsvReader.HEADER_IDENTIFICATOR, singleIdentifier);
+        Map<String, String> identifiers = SensorIdsCsvReader.findIdentifiers("metasysObjectId", record);
+        assertEquals(1, identifiers.size());
+        assertEquals("567-890", identifiers.get("metasysObjectId"));
+    }
 }

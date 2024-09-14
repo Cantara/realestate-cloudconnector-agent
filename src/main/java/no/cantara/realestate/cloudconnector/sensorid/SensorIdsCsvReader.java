@@ -25,7 +25,10 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class SensorIdsCsvReader {
     private static final Logger log = getLogger(SensorIdsCsvReader.class);
     public static final String KEY_VALUE_SEPARATOR = ":";
-    private static final String IDENTIFIERS_SEAPARATOR = ";";
+    public static final String IDENTIFIERS_SEAPARATOR = ";";
+    public static final String HEADER_SENSOR_ID = "SensorId";
+    public static final String HEADER_SENSOR_SYSTEM = "SensorSystem";
+    public static final String HEADER_IDENTIFICATOR = "Identificator";
 
     public static void main(String[] args) throws IOException {
         List<SensorId> sensorIds = parseSensorIds("src/test/resources/config/sensorids.csv");
@@ -105,8 +108,14 @@ public class SensorIdsCsvReader {
             for (String identifierPair : identifierPairs) {
                 // Split hvert par på ":" for å få nøkkel og verdi
                 String[] keyValuePair = identifierPair.split(KEY_VALUE_SEPARATOR);
-                if (keyValuePair.length == 2) {
+                if (keyValuePair.length == 1) {
+                    identifiers.put(singleIdKey, keyValuePair[0]);
+                } else if (keyValuePair.length == 2) {
                     identifiers.put(keyValuePair[0], keyValuePair[1]);
+                } else if (keyValuePair.length > 2) {
+                    String key = keyValuePair[0];
+                    String value = identifierPair.substring(key.length() + 1);
+                    identifiers.put(key, value);
                 } else {
                     identifiers.put(singleIdKey, identifierPair);
                 }

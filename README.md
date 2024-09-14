@@ -17,6 +17,16 @@ Pipe observations from Building Automation Systems to your favorite Cloud Provid
 sensormappings.simulator.enabled=true
 ```
 
+## Import SensorIds
+### From CSV File
+Parse sensor ids from a csv file
+* Expected format:
+* SensorId;SensorSystem;Identificator
+* Identificator is either
+*  1 a single value or
+*  2 a key-value pair separated by ":"
+*  3 multiple key-value pairs separated by ";"'
+
 ## Statistics and Metrics
 
 [Metrics](http://localhost:8083/admin/metrics/app/*)

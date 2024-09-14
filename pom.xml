@@ -73,7 +73,6 @@
       <artifactId>jersey-media-sse</artifactId>
       <version>3.1.8</version>
     </dependency>
-
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>

@@ -81,7 +81,9 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
         try {
             RealestateCloudconnectorApplication application = new RealestateCloudconnectorApplication(config).init().start();
-            log.info("Server started. See status on {}:{}{}/health", "http://localhost", config.get("server.port"), config.get("server.context-path"));
+            String baseUrl = "http://localhost:"+config.get("server.port")+config.get("server.context-path");
+            log.info("Server started. See status on {}/health", baseUrl);
+            log.info("   SensorIds: {}/sensorids/status", baseUrl);
 //            application.startImportingObservations();
         } catch (Exception e) {
             log.error("Failed to start RealestateCloudconnectorApplication", e);
@@ -145,14 +147,14 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
                 log.info("Found implementation of ObservationDistributionClient on classpath: {}", distributionClient.toString());
                 observationDistributionClient = distributionClient;
             }
-            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-isConnected: ", observationDistributionClient::isConnectionEstablished);
-            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-numberofMessagesObserved: ", observationDistributionClient::getNumberOfMessagesObserved);
+            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-isConnected", observationDistributionClient::isConnectionEstablished);
+            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-numberofMessagesObserved", observationDistributionClient::getNumberOfMessagesObserved);
         }
         if (observationDistributionClient == null) {
             log.warn("No implementation of ObservationDistributionClient was found on classpath. Creating a ObservationDistributionServiceStub explicitly.");
             observationDistributionClient = new ObservationDistributionServiceStub();
-            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-isConnected: ", observationDistributionClient::isConnectionEstablished);
-            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-numberofMessagesDistributed: ", observationDistributionClient::getNumberOfMessagesObserved);
+            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-isConnected", observationDistributionClient::isConnectionEstablished);
+            get(StingrayHealthService.class).registerHealthProbe(observationDistributionClient.getName() +"-numberofMessagesDistributed", observationDistributionClient::getNumberOfMessagesObserved);
         }
         observationDistributionClient.openConnection();
         log.info("Establishing and verifying connection to Azure.");
@@ -168,9 +170,9 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         ObservationDistributionResource observationDistributionResource = initAndRegisterJaxRsWsComponent(ObservationDistributionResource.class, () -> createObservationDistributionResource(finalObservationDistributionClient));
 
         get(StingrayHealthService.class).registerHealthProbe("mappedIdRepository.size", mappedIdRepository::size);
-        get(StingrayHealthService.class).registerHealthProbe(sdClient.getName() + "-isHealthy: ", sdClient::isHealthy);
-        get(StingrayHealthService.class).registerHealthProbe(sdClient.getName() + "-isLogedIn: ", sdClient::isLoggedIn);
-        get(StingrayHealthService.class).registerHealthProbe(sdClient.getName() + "-numberofTrendsSamples: ", sdClient::getNumberOfTrendSamplesReceived);
+        get(StingrayHealthService.class).registerHealthProbe(sdClient.getName() + "-isHealthy", sdClient::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe(sdClient.getName() + "-isLogedIn", sdClient::isLoggedIn);
+        get(StingrayHealthService.class).registerHealthProbe(sdClient.getName() + "-numberofTrendsSamples", sdClient::getNumberOfTrendSamplesReceived);
         get(StingrayHealthService.class).registerHealthProbe("observationDistribution.message.count", observationDistributionResource::getDistributedCount);
         //Random Example
         init(Random.class, this::createRandom);
@@ -348,10 +350,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             ingestionServices = new HashMap<>();
         }
         ingestionServices.put(service.getName(), service);
-        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
-        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-subscriptionsCount: ", service::getSubscriptionsCount);
-        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsIngested: ", service::getNumberOfMessagesImported);
-        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedIngestions: ", service::getNumberOfMessagesFailed);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy", service::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-subscriptionsCount", service::getSubscriptionsCount);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsImported", service::getNumberOfMessagesImported);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedObservationImports", service::getNumberOfMessagesFailed);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-whenLastObservationImported", service::getWhenLastMessageImported);
         metricRegistry.register(MetricRegistry.name(service.getName(), "SubscriptionsCount", "size"),
                 new Gauge<Long>() {
                     @Override
@@ -383,9 +386,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.info("ServiceLoader found a Distribution service called {}!", service.getName());
             service.initialize(null);
             distributionServices.put(service.getName(), service);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy: ", service::isHealthy);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsDistributed: ", service::getNumberOfMessagesPublished);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedDistributed: ", service::getNumberOfMessagesFailed);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy", service::isHealthy);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsDistributed", service::getNumberOfMessagesPublished);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedDistributed", service::getNumberOfMessagesFailed);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofMessagesInQueue", service::getNumberOfMessagesInQueue);
+            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-whenLastMessageDistributed", service::getWhenLastMessageDistributed);
             get(StingrayHealthService.class).registerHealthCheck(service.getName() + "-isHealthy:", new HealthCheck() {
                 @Override
                 protected HealthCheck.Result check() throws Exception {
@@ -414,11 +419,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     private void initObservationReceiver() {
         observationsRepository = new ObservationsRepository(metricRegistry);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-isHealthy: ", observationsRepository::isHealthy);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-received: ", observationsRepository::getObservedValueCount);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValuesQueue-size: ", observationsRepository::getObservedValuesQueueSize);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigValues-received: ", observationsRepository::getObservedConfigValueCount);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigMessages-received: ", observationsRepository::getObservedConfigMessageCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-isHealthy", observationsRepository::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-received", observationsRepository::getObservedValueCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValuesQueue-size", observationsRepository::getObservedValuesQueueSize);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigValues-received", observationsRepository::getObservedConfigValueCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ConfigMessages-received", observationsRepository::getObservedConfigMessageCount);
     }
 
     private void initObservationDistributor() {
@@ -427,8 +432,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
         }
         observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), mappedIdRepository, metricRegistry);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy: ", observationDistributor::isHealthy);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed: ", observationDistributor::getObservedValueDistributedCount);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy", observationDistributor::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed", observationDistributor::getObservedValueDistributedCount);
         observationDistributorThread = new Thread(observationDistributor);
         observationDistributorThread.start();
         log.trace("Started ObservationDistributor thread");
@@ -450,7 +455,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     protected MappedIdRepository createMappedIdRepository(boolean useSimulatedSensors) {
         MappedIdRepository mappedIdRepository = new MappedIdRepositoryImpl();
-        get(StingrayHealthService.class).registerHealthProbe("MappedIdRepository-size: ", mappedIdRepository::size);
+        get(StingrayHealthService.class).registerHealthProbe("MappedIdRepository-size", mappedIdRepository::size);
         if (useSimulatedSensors) {
             log.warn("Using simulated SensorId's");
             List<SensorId> sensorIds = new ArrayList<>();
@@ -469,7 +474,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     protected SensorIdRepository createSensorIdRepository(boolean useSimulatedSensors) {
         SensorIdRepository sensorIdRepository = new InMemorySensorIdRepository();
-        get(StingrayHealthService.class).registerHealthProbe("SensorIdRepository-size: ", sensorIdRepository::size);
+        get(StingrayHealthService.class).registerHealthProbe("SensorIdRepository-size", sensorIdRepository::size);
         if (useSimulatedSensors) {
             log.warn("Using simulated SensorId's");
             List<SensorId> sensorIds = new ArrayList<>();
