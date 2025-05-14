@@ -114,6 +114,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             throw new RealestateCloudconnectorException("Missing Metric Registry");
         }
         mappedIdRepository = createMappedIdRepository(useSimulatedSensors);
+        put(MappedIdRepository.class, mappedIdRepository);
         sensorIdRepository = createSensorIdRepository(useSimulatedSensors);
         put(SensorIdRepository.class, sensorIdRepository);
         initNotificationServices();
