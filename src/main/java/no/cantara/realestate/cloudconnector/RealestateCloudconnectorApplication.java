@@ -121,6 +121,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         initDistributionController();
         initPluginFactories();
         initIngestionController();
+        importSensorIds();
         subscribeToSensors(useSimulatedSensors);
         initRouter();
         initObservationDistributor();
@@ -180,7 +181,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 */
         //Wire up the stream importer
 
-        importSensorIds();
+
     }
 
     private void initMetrics() {
