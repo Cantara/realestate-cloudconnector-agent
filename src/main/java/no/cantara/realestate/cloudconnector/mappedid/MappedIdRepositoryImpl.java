@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
+@Deprecated
 public class MappedIdRepositoryImpl implements MappedIdRepository {
     private static final Logger log = getLogger(MappedIdRepositoryImpl.class);
 

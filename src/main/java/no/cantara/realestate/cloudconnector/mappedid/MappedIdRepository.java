@@ -7,6 +7,7 @@ import no.cantara.realestate.sensors.UniqueKey;
 
 import java.util.List;
 
+@Deprecated
 public interface MappedIdRepository {
 
     void add(MappedSensorId sensorId);
