@@ -2,7 +2,7 @@ package no.cantara.realestate.cloudconnector.mappedid;
 
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedTempSensor;
-import no.cantara.realestate.semantics.rec.SensorRecObject;
+import no.cantara.realestate.rec.SensorRecObject;
 import no.cantara.realestate.sensors.MappedSensorId;
 import no.cantara.realestate.sensors.SensorId;
 import no.cantara.realestate.sensors.SensorType;

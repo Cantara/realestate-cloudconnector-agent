@@ -64,7 +64,7 @@ public class MappedIdRepositoryResource {
                 if (sensor.getSensorId() instanceof DesigoSensorId) {
                     sensorDetail.put("desigoId", ((DesigoSensorId) sensorId).getDesigoId());
                     sensorDetail.put("desigoPropertyId", ((DesigoSensorId) sensorId).getDesigoPropertyId());
-                    sensorDetail.put("trendId", ((DesigoSensorId) sensorId).getTrendId());
+//                    sensorDetail.put("trendId", ((DesigoSensorId) sensorId).getTrendId());
                 }
             }
 

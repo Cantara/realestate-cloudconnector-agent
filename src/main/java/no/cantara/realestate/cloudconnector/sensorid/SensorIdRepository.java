@@ -1,7 +1,7 @@
 package no.cantara.realestate.cloudconnector.sensorid;
 
 
-import no.cantara.realestate.semantics.rec.RecObject;
+import no.cantara.realestate.rec.RecObject;
 import no.cantara.realestate.sensors.SensorId;
 import no.cantara.realestate.sensors.SensorIdQuery;
 import no.cantara.realestate.sensors.SensorSystem;

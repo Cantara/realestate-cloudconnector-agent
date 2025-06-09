@@ -28,7 +28,7 @@ class InMemorySensorIdRepositoryTest {
         system2 = SensorSystem.desigo;
         sensor1 = new MetasysSensorId("objectId1", "objectReference1");
         sensor2 = new MetasysSensorId("objectId2", "objectReference2");
-        sensor3 = new DesigoSensorId("desigoId1", "desigoPropertyId1");
+        sensor3 = new DesigoSensorId("Sensor-desigo1","desigoId1", "desigoPropertyId1");
         repository.addAll(List.of(sensor1, sensor2, sensor3));
     }
 

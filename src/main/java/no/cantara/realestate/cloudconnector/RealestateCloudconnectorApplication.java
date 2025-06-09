@@ -26,7 +26,7 @@ import no.cantara.realestate.plugins.RealEstatePluginFactory;
 import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
-import no.cantara.realestate.semantics.rec.SensorRecObject;
+import no.cantara.realestate.rec.SensorRecObject;
 import no.cantara.realestate.sensors.*;
 import no.cantara.realestate.sensors.tfm.Tfm;
 import no.cantara.stingray.application.AbstractStingrayApplication;

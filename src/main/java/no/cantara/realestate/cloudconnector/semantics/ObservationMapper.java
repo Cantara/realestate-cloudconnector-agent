@@ -3,7 +3,7 @@ package no.cantara.realestate.cloudconnector.semantics;
 import no.cantara.realestate.observations.ObservationMessage;
 import no.cantara.realestate.observations.ObservationMessageBuilder;
 import no.cantara.realestate.observations.ObservedValue;
-import no.cantara.realestate.semantics.rec.SensorRecObject;
+import no.cantara.realestate.rec.SensorRecObject;
 import no.cantara.realestate.sensors.MappedSensorId;
 import no.cantara.realestate.sensors.MeasurementUnit;
 import no.cantara.realestate.sensors.SensorId;
