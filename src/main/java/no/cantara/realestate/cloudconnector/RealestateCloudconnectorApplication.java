@@ -4,6 +4,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheck;
 import no.cantara.config.ApplicationProperties;
+import no.cantara.realestate.cloudconnector.rec.RecRepositoryInMemory;
 import no.cantara.realestate.cloudconnector.sensorid.InMemorySensorIdRepository;
 import no.cantara.realestate.cloudconnector.sensorid.SensorIdRepository;
 import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorPresentValueIngestionService;
@@ -26,6 +27,8 @@ import no.cantara.realestate.plugins.RealEstatePluginFactory;
 import no.cantara.realestate.plugins.config.PluginConfig;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
+import no.cantara.realestate.rec.RecRepository;
+import no.cantara.realestate.rec.RecTags;
 import no.cantara.realestate.rec.SensorRecObject;
 import no.cantara.realestate.sensors.*;
 import no.cantara.realestate.sensors.tfm.Tfm;
@@ -54,6 +57,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private Map<String, IngestionService> ingestionServices;
     private ObservationsRepository observationsRepository;
     private ObservationDistributor observationDistributor;
+    private RecRepository recRepository;
     private MappedIdRepository mappedIdRepository;
     private SensorIdRepository sensorIdRepository;
     private Thread observationDistributorThread;
@@ -113,6 +117,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         if (metricRegistry == null) {
             throw new RealestateCloudconnectorException("Missing Metric Registry");
         }
+        recRepository = createRecRepository(useSimulatedSensors);
         mappedIdRepository = createMappedIdRepository(useSimulatedSensors);
         put(MappedIdRepository.class, mappedIdRepository);
         sensorIdRepository = createSensorIdRepository(useSimulatedSensors);
@@ -286,6 +291,18 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         return mappedSensorIds;
     }
 
+    public static RecTags buildRecTagsStub(String roomName, SensorType sensorType) {
+        RecTags recTags = new RecTags();
+        recTags.setTfm(roomName + "-" + sensorType.name());
+        recTags.setRealEstate("TestRealEstate");
+        recTags.setBuilding("TestBuilding");
+        recTags.setFloor("1");
+        recTags.setServesRoom(roomName);
+        recTags.setPlacementRoom(roomName);
+        recTags.setSensorType(sensorType.name());
+        return recTags;
+    }
+
     public static SensorRecObject buildRecStub(String roomName, SensorType sensorType) {
         SensorRecObject recObject = new SensorRecObject(UUID.randomUUID().toString());
         recObject.setTfm(new Tfm(roomName + "-" + sensorType.name()));
@@ -454,6 +471,22 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
          */
     }
 
+    protected RecRepository createRecRepository(boolean useSimulatedSensors) {
+        RecRepository recRepository = new RecRepositoryInMemory();
+        get(StingrayHealthService.class).registerHealthProbe("RecRepository-size", recRepository::size);
+        if (useSimulatedSensors) {
+            log.warn("Using simulated SensorId's");
+            List<SensorRecObject> sensorRecs = new ArrayList<>();
+            RecTags simulatedCo2SensorRecTags = buildRecTagsStub("room1", SensorType.co2);
+            Map<String,String> identifiers = Map.of("sensorId", simulatedCo2SensorRecTags.getSensorId());
+            SensorId sesorId = new SensorId(simulatedCo2SensorRecTags.getTwinId(), SensorSystem.simulator, identifiers );
+            recRepository.addRecTags(sesorId, simulatedCo2SensorRecTags);
+            RecTags simulatedTempSensorRecTags = buildRecTagsStub("room1", SensorType.temp);
+            SensorId simulatedTempSensorId = new SensorId(simulatedTempSensorRecTags.getTwinId(), SensorSystem.simulator, Map.of("sensorId", simulatedTempSensorRecTags.getSensorId()));
+            recRepository.addRecTags(simulatedTempSensorId, simulatedCo2SensorRecTags);
+        }
+        return recRepository;
+    }
 
     protected MappedIdRepository createMappedIdRepository(boolean useSimulatedSensors) {
         MappedIdRepository mappedIdRepository = new MappedIdRepositoryImpl();

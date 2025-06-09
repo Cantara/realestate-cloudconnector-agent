@@ -172,4 +172,9 @@ public class RecRepositoryTest {
 
         recRepo.addRecTags(tfmSensor2, tfmTags2);
     }
+
+    @Test
+    void testSize() {
+        assertEquals(6, recRepo.size());
+    }
 }
