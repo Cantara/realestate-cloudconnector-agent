@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Repository Status</title>
+    <style th:insert="~{../static/styles/cssandjs/systemStatus.css}"></style>
+</head>
+<body>
+
+<h1>Repository Status</h1>
+
+<div>
+    <h2 th:text="${count} + ' Sensors'"/>
+    <table style="border: solid 1px black;">
+        <thead>
+        <tr>
+            <th>SensorId</th><th>SensorType</th><th>RecSensorId</th><th>Building</th>
+        </tr>
+        </thead>
+        <th:block th:each="sensorDetail : ${recTags}">
+            <tr>
+                <td th:text="${sensorDetail.sensorId}"/>
+                <td th:text="${sensorDetail.sensorType}"/>
+                <td th:text="${sensorDetail.recSensorId}"/>
+                <td th:text="${sensorDetail.recBuilding}"/>
+            </tr>
+        </th:block>
+    </table>
+    <h3>Details</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Key</th><th>Value</th>
+        </tr>
+        </thead>
+        <th:block th:each="sensorDetail : ${recTags}">
+            <tr th:each="property: ${sensorDetail}">
+                <td th:text="${property.key}"/>
+                <td th:text="${property.value}"/>
+            </tr>
+            <tr><td colspan="2">----</td></tr>
+        </th:block>
+    </table>
+</div>
+
+</body>
+</html>

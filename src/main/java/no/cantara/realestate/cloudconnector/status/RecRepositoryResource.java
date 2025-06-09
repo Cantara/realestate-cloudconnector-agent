@@ -48,7 +48,7 @@ public class RecRepositoryResource {
         ctx.setVariable("count", size);
         ctx.setVariable("recTags", recTagsList);
         StringWriter stringWriter = new StringWriter();
-        templateEngine.process("RepositoryStatus", ctx, stringWriter);
+        templateEngine.process("RecRepositoryStatus", ctx, stringWriter);
         String html = stringWriter.toString();
         return Response.ok(html).build();
 
@@ -61,7 +61,7 @@ public class RecRepositoryResource {
             RecTags recTags = sensorRecMap.get(sensorId);
             Map<String, Object> sensorDetail = new HashMap<>();
             sensorDetail.put("sensorId", sensorId.getId());
-            sensorDetail.put("sensorType", sensorId.getClass().getSimpleName());
+            sensorDetail.put("sensorType", recTags.getSensorType());
             Map<String, String> identifiers = sensorId.getIdentifiers();
             for (String identifier : identifiers.keySet()) {
                 sensorDetail.put("sensorIdentifier-" + identifier, identifiers.get(identifier));

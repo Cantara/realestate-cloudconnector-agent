@@ -86,6 +86,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             String baseUrl = "http://localhost:"+config.get("server.port")+config.get("server.context-path");
             log.info("Server started. See status on {}/health", baseUrl);
             log.info("   SensorIds: {}/sensorids/status", baseUrl);
+            log.info("   Recs: {}/rec/status", baseUrl);
 //            application.startImportingObservations();
         } catch (Exception e) {
             log.error("Failed to start RealestateCloudconnectorApplication", e);
@@ -332,6 +333,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
      */
 
     public static RecTags buildRecTagsStub(String roomName, SensorType sensorType) {
+        String twinId = "Sensor-Twin-" + roomName + "-" + sensorType.name();
         RecTags recTags = new RecTags();
         recTags.setTfm(roomName + "-" + sensorType.name());
         recTags.setRealEstate("TestRealEstate");
@@ -340,6 +342,9 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         recTags.setServesRoom(roomName);
         recTags.setPlacementRoom(roomName);
         recTags.setSensorType(sensorType.name());
+        recTags.setSensorId(twinId);
+        recTags.setTwinId(twinId);
+        recTags.setTfm("TFM-" + roomName + "-" + sensorType.name());
         return recTags;
     }
 
@@ -520,12 +525,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.warn("Using simulated SensorId's");
             List<SensorRecObject> sensorRecs = new ArrayList<>();
             RecTags simulatedCo2SensorRecTags = buildRecTagsStub("room1", SensorType.co2);
-            Map<String,String> identifiers = Map.of("sensorId", simulatedCo2SensorRecTags.getSensorId());
-            SensorId sesorId = new SensorId(simulatedCo2SensorRecTags.getTwinId(), SensorSystem.simulator, identifiers );
+            SensorId sesorId = new SensorId(simulatedCo2SensorRecTags.getTwinId(), SensorSystem.simulator, Map.of("sensorId", simulatedCo2SensorRecTags.getSensorId()));
             recRepository.addRecTags(sesorId, simulatedCo2SensorRecTags);
             RecTags simulatedTempSensorRecTags = buildRecTagsStub("room1", SensorType.temp);
             SensorId simulatedTempSensorId = new SensorId(simulatedTempSensorRecTags.getTwinId(), SensorSystem.simulator, Map.of("sensorId", simulatedTempSensorRecTags.getSensorId()));
-            recRepository.addRecTags(simulatedTempSensorId, simulatedCo2SensorRecTags);
+            recRepository.addRecTags(simulatedTempSensorId, simulatedTempSensorRecTags);
         }
         return recRepository;
     }
