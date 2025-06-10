@@ -96,7 +96,12 @@ public class ObservationDistributor implements Runnable {
 
 
     protected void addSemanticsAndDistribute(ObservedValue observedValue) {
+        if (observedValue == null) {
+            log.trace("ObservedValue is null, skipping distribution");
+            return;
+        }
         log.trace("Fetched observedValue {} from the queue", observedValue);
+
         auditLog.trace("Distribute__Observed__{}__{}__{}__{}__{}", observedValue.getClass(), observedValue.getSensorId().getId(), observedValue.getSensorId().getId(),observedValue.getValue(), observedValue.getObservedAt());
 
         SensorId sensorId = observedValue.getSensorId();
@@ -116,6 +121,9 @@ public class ObservationDistributor implements Runnable {
 //        AzureObservationDistributionClient azureObservationsClient = new AzureObservationDistributionClient();
         if (azureObservationsClient != null) {
             azureObservationsClient.publish(observationMessage);
+        }
+        if (observationDistributionServiceStub != null) {
+            observationDistributionServiceStub.publish(observationMessage);
         }
         //Support for InfluxDB
         if (recTags != null) {
