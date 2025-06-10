@@ -16,6 +16,8 @@ public class AuditState {
     private AuditEvent lastObservedStreamEvent = null;
     private AuditEvent lastObservedPresentValueEvent = null;
     private volatile Instant lastObservedTimestamp = null;
+    private AuditEvent lastPulledFromQueueEvent = null;
+    private AuditEvent lastDistributedEvent = null;
 
     public AuditState(String sensorId) {
         // Initialize with a FOUND event to indicate the sensorId is being tracked
@@ -56,6 +58,12 @@ public class AuditState {
         if (lastObservedPresentValueEvent != null) {
             allEvents.add(lastObservedPresentValueEvent);
         }
+        if (lastPulledFromQueueEvent != null) {
+            allEvents.add(lastPulledFromQueueEvent);
+        }
+        if (lastDistributedEvent != null) {
+            allEvents.add(lastDistributedEvent);
+        }
         return allEvents.stream().sorted(Comparator.comparing(AuditEvent::getTimestamp)).collect(Collectors.toList());
     }
 
@@ -92,6 +100,14 @@ public class AuditState {
     public void setLastObservedTrendEvent(AuditEvent lastObservedTrendEvent) {
         this.lastObservedTrendEvent = lastObservedTrendEvent;
         setLastObservedTimestamp(lastObservedTrendEvent.getTimestamp());
+    }
+
+    public void setLastPulledFromQueue(AuditEvent event) {
+        this.lastPulledFromQueueEvent = event;
+    }
+
+    public void setLastDistributed(AuditEvent event) {
+        this.lastDistributedEvent = event;
     }
 }
 

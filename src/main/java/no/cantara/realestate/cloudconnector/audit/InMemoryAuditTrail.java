@@ -42,6 +42,20 @@ public class InMemoryAuditTrail implements AuditTrail {
     }
 
     @Override
+    public void logObservationFetchedFromQueue(String sensorId, String detail) {
+        AuditState sensorIdState = getNullSafeState(sensorId);
+        AuditEvent event = new AuditEvent(sensorId, AuditEvent.Type.PULLED_QUEUE, "PulledFromQueue:" + detail);
+        sensorIdState.setLastPulledFromQueue(event);
+    }
+
+    @Override
+    public void logObsevationDistributed(String sensorId, String detail) {
+        AuditState sensorIdState = getNullSafeState(sensorId);
+        AuditEvent event = new AuditEvent(sensorId, AuditEvent.Type.DISTRIBUTED, "Distributed:" + detail);
+        sensorIdState.setLastDistributed(event);
+    }
+
+    @Override
     public Optional<AuditState> getState(String sensorId) {
         return Optional.ofNullable(states.get(sensorId));
     }

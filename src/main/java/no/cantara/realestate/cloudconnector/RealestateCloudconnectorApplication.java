@@ -537,7 +537,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private void initObservationDistributor() {
         //Stub implementation to be replaced with AzureObservationDistributionClient or other implementations
         List<DistributionService> distributionServicesList = new ArrayList<>();
-        DistributionService observationDistributionClient = new ObservationDistributionServiceStub();
+        DistributionService observationDistributionClient = new ObservationDistributionServiceStub(auditTrail);
         put(DistributionService.class, observationDistributionClient);
         if(observationDistributionClient instanceof ObservationDistributionClient) {
             put(ObservationDistributionClient.class, (ObservationDistributionClient) observationDistributionClient);
@@ -551,7 +551,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
         }
         // End stub implementation
-        observationDistributor = new ObservationDistributor(observationsRepository, distributionServicesList, recRepository, metricRegistry);
+        observationDistributor = new ObservationDistributor(observationsRepository, distributionServicesList, recRepository, metricRegistry, auditTrail);
         get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy", observationDistributor::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed", observationDistributor::getObservedValueDistributedCount);
         observationDistributorThread = new Thread(observationDistributor);

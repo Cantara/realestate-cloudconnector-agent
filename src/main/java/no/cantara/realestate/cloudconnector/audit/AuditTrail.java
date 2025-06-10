@@ -21,4 +21,8 @@ public interface AuditTrail {
     Map<String, AuditState> getAll();
 
     void logFailed(String sensorId, String comment);
+
+    void logObservationFetchedFromQueue(String sensorId, String detail);
+
+    void logObsevationDistributed(String sensorId, String detail);
 }

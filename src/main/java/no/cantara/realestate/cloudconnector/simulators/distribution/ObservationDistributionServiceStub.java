@@ -1,5 +1,6 @@
 package no.cantara.realestate.cloudconnector.simulators.distribution;
 
+import no.cantara.realestate.cloudconnector.audit.AuditTrail;
 import no.cantara.realestate.distribution.ObservationDistributionClient;
 import no.cantara.realestate.observations.ObservationMessage;
 import no.cantara.realestate.plugins.distribution.DistributionService;
@@ -16,6 +17,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class ObservationDistributionServiceStub implements DistributionService, ObservationDistributionClient {
     private static final Logger log = getLogger(ObservationDistributionServiceStub.class);
 
+    private AuditTrail auditTrail;
     public static final int DEFAULT_MAX_SIZE = 10000;
     private final List<ObservationMessage> observedMessages;
     private boolean isConnected = false;
@@ -24,12 +26,13 @@ public class ObservationDistributionServiceStub implements DistributionService, 
     private long numberOfMessagesPublished = 0;
     private Instant whenLastMessageDistributed = null;
 
-    public ObservationDistributionServiceStub() {
-        this(DEFAULT_MAX_SIZE);
+    public ObservationDistributionServiceStub(AuditTrail auditTrail) {
+        this(DEFAULT_MAX_SIZE, auditTrail);
     }
 
-    public ObservationDistributionServiceStub(int maxSize) {
+    public ObservationDistributionServiceStub(int maxSize, AuditTrail auditTrail) {
         observedMessages = new LimitedArrayList(maxSize);
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -61,6 +64,8 @@ public class ObservationDistributionServiceStub implements DistributionService, 
             log.trace("Added 1 message");
             numberOfMessagesObserved ++;
             whenLastMessageDistributed = Instant.now();
+            String twinId = message.getSensorId();
+            auditTrail.logObsevationDistributed(twinId,"ObservationDistributionServiceStub");
         } else {
             observedMessages.remove(0);
             publish(message);

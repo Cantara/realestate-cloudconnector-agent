@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public class AuditEvent {
     public enum Type {
-        FOUND, MISSING, QUEUED, PUBLISHED, SUBSCRIBED, OBSERVED, CREATED, INNITIALIZED, FAILED
+        FOUND, MISSING, QUEUED, PUBLISHED, SUBSCRIBED, OBSERVED, CREATED, INNITIALIZED, PULLED_QUEUE, DISTRIBUTED, FAILED
     }
 
     private final Instant timestamp;

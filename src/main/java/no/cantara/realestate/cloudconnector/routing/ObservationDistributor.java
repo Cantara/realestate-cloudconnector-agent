@@ -4,7 +4,9 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import no.cantara.realestate.RealEstateException;
 import no.cantara.realestate.azure.AzureObservationDistributionClient;
+import no.cantara.realestate.cloudconnector.audit.AuditTrail;
 import no.cantara.realestate.cloudconnector.semantics.ObservationMapper;
+import no.cantara.realestate.cloudconnector.simulators.distribution.ObservationDistributionServiceStub;
 import no.cantara.realestate.observations.ObservationMessage;
 import no.cantara.realestate.observations.ObservedValue;
 import no.cantara.realestate.plugins.distribution.DistributionService;
@@ -24,6 +26,8 @@ public class ObservationDistributor implements Runnable {
     private final ObservationsRepository observationsRepository;
     private final List<DistributionService> distributionServices;
     private AzureObservationDistributionClient azureObservationsClient = null;
+    private ObservationDistributionServiceStub observationDistributionServiceStub = null;
+    private AuditTrail auditTrail = null;
 //    private final MappedIdRepository mappedIdRepository;
     private final RecRepository recRepository;
     private static final long DEFAULT_SLEEP_PERIOD_MS = 100;
@@ -33,7 +37,7 @@ public class ObservationDistributor implements Runnable {
     Meter distributedMeter;
     private boolean healthy = true;
 
-    public ObservationDistributor(ObservationsRepository observationsRepository, List<DistributionService> distributionServices, RecRepository recRepository, MetricRegistry metricRegistry) {
+    public ObservationDistributor(ObservationsRepository observationsRepository, List<DistributionService> distributionServices, RecRepository recRepository, MetricRegistry metricRegistry, AuditTrail auditTrail) {
         this.observationsRepository = observationsRepository;
         this.distributionServices = distributionServices;
         this.recRepository = recRepository;
@@ -44,9 +48,15 @@ public class ObservationDistributor implements Runnable {
             if (distributionService instanceof AzureObservationDistributionClient) {
                 this.azureObservationsClient = (AzureObservationDistributionClient) distributionService;
                 log.info("Using AzureObservationDistributionClient for distribution");
+            } else if (distributionService instanceof ObservationDistributionServiceStub) {
+                this.observationDistributionServiceStub = (ObservationDistributionServiceStub) distributionService;
+                log.info("Using ObservationDistributionServiceStub for distribution");
+            } else {
+                log.info("Using DistributionService {} for distribution", distributionService.getName());
             }
         }
         distributedMeter = metricRegistry.meter("ObservationsDistributed");
+        this.auditTrail = auditTrail;
         /*
         metricRegistry.register(MetricRegistry.name(ObservationDistributor.class, "ObservationsDistributed", "total"),
                 new Gauge<Long>() {
@@ -90,6 +100,10 @@ public class ObservationDistributor implements Runnable {
         auditLog.trace("Distribute__Observed__{}__{}__{}__{}__{}", observedValue.getClass(), observedValue.getSensorId().getId(), observedValue.getSensorId().getId(),observedValue.getValue(), observedValue.getObservedAt());
 
         SensorId sensorId = observedValue.getSensorId();
+        if (sensorId != null) {
+            String twinId = sensorId.getTwinId();
+            auditTrail.logObservationFetchedFromQueue(twinId,"");
+        }
         RecTags recTags = recRepository.getRecTagsBySensorId(sensorId);
         ObservationMessage observationMessage = null;
         if (recTags == null) {
