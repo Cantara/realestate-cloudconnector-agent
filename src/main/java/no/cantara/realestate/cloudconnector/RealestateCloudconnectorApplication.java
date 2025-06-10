@@ -21,8 +21,10 @@ import no.cantara.realestate.cloudconnector.status.HealthListener;
 import no.cantara.realestate.cloudconnector.status.RecRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SensorIdsRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
+import no.cantara.realestate.observations.ObservationListener;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
+import no.cantara.realestate.plugins.notifications.NotificationListener;
 import no.cantara.realestate.rec.RecRepository;
 import no.cantara.realestate.rec.RecTags;
 import no.cantara.realestate.rec.SensorRecObject;
@@ -117,6 +119,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             throw new RealestateCloudconnectorException("Missing Metric Registry");
         }
         recRepository = createRecRepository(useSimulatedSensors);
+        put(RecRepository.class, recRepository);
         //Disable MappedIdRepository for now
 //        mappedIdRepository = createMappedIdRepository(useSimulatedSensors);
 //        put(MappedIdRepository.class, mappedIdRepository);
@@ -125,13 +128,18 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         initNotificationServices();
         initObservationReceiver();
         initDistributionController();
+        initObservationDistributor();
+        put(ObservationsRepository.class, observationsRepository);
 //        Disable for now
 //        initPluginFactories();
+        //Move to implementations in Desigo and Metasys
+        /*
         initIngestionController();
         importSensorIds();
         subscribeToSensors(useSimulatedSensors);
         initRouter();
         initObservationDistributor();
+        */
 
         //Setup Metrics observation
         initMetrics();
@@ -360,7 +368,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         return recObject;
     }
 
-    void initRouter() {
+    protected void initRouter() {
         List<IngestionService> ingestors = new ArrayList<>();
         for (IngestionService ingestionService : ingestionServices.values()) {
             ingestors.add(ingestionService);
@@ -410,7 +418,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         log.info("ServiceLoader found " + ingestionServices.size() + " ingestion services!");
     }
 
-    private void initIngestionService(IngestionService service) {
+    protected void initIngestionService(IngestionService service) {
         //FIXME how to initialize these when PluginFactories have added these.
         if (ingestionServices == null) {
             ingestionServices = new HashMap<>();
@@ -479,12 +487,15 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         } else {
             log.warn("ServiceLoader could not find any implementation of NotificationService. Using SlackNotificationService.");
             notificationService = new SlackNotificationService();
+            put(NotificationService.class, notificationService);
         }
         this.notificationListener = new HealthListener(notificationService);
+        put(NotificationListener.class, notificationListener);
     }
 
     private void initObservationReceiver() {
         observationsRepository = new ObservationsRepository(metricRegistry);
+        put(ObservationListener.class, observationsRepository);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-isHealthy", observationsRepository::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-received", observationsRepository::getObservedValueCount);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValuesQueue-size", observationsRepository::getObservedValuesQueueSize);
