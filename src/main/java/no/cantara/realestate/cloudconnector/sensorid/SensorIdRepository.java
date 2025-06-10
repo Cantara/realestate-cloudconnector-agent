@@ -1,24 +1,22 @@
 package no.cantara.realestate.cloudconnector.sensorid;
 
 
-import no.cantara.realestate.semantics.rec.RecObject;
 import no.cantara.realestate.sensors.SensorId;
 import no.cantara.realestate.sensors.SensorIdQuery;
 import no.cantara.realestate.sensors.SensorSystem;
-import no.cantara.realestate.sensors.UniqueKey;
 
 import java.util.List;
 import java.util.Map;
 
-public interface SensorIdRepository {
+public interface SensorIdRepository<T extends SensorId> {
 
     void add(SensorId sensorId);
-    void addAll(List<SensorId> sensorIds);
-    List<SensorId> find(SensorSystem system);
+    void addAll(List<T> sensorIds);
+    List<T> find(SensorSystem system);
 
-    List<SensorId> find(SensorIdQuery sensorIdQuery);
-    List<SensorId> all();
-    Map<SensorSystem,List<SensorId>> allBySystem();
+    List<T> find(SensorIdQuery sensorIdQuery);
+    List<T> all();
+    Map<SensorSystem,List<T>> allBySystem();
 
 
 

@@ -24,9 +24,10 @@ public class InMemorySensorIdRepository implements SensorIdRepository {
     }
 
     @Override
-    public void addAll(List<SensorId> sensorIds) {
+    public void addAll(List sensorIds) {
         this.sensorIds.addAll(sensorIds);
     }
+
 
     @Override
     public List<SensorId> find(SensorSystem system) {

@@ -5,17 +5,17 @@ import org.slf4j.helpers.MessageFormatter;
 import java.util.UUID;
 
 public class RealestateCloudconnectorException extends RuntimeException {
-    private final UUID uuid;
+    private final UUID id;
     private Enum<StatusType> statusType = null;
 
     public RealestateCloudconnectorException(String message) {
         super(message);
-        uuid = UUID.randomUUID();
+        id = UUID.randomUUID();
     }
 
     public RealestateCloudconnectorException(String message, Throwable throwable) {
         super(message, throwable);
-        this.uuid = UUID.randomUUID();
+        this.id = UUID.randomUUID();
     }
 
     public RealestateCloudconnectorException(String message, Throwable throwable, Object... parameters) {
@@ -41,7 +41,7 @@ public class RealestateCloudconnectorException extends RuntimeException {
     @Override
     public String getMessage() {
 
-        String message = super.getMessage() +" MessageId: " + uuid.toString();
+        String message = super.getMessage() +" MessageId: " + id.toString();
         if (getCause() != null) {
             message = message + "\n\tCause: " + getCause().getMessage();
         }
@@ -49,9 +49,15 @@ public class RealestateCloudconnectorException extends RuntimeException {
     }
 
     public String getMessageId() {
-        return uuid.toString();
+        return id.toString();
     }
 
+    public Enum<StatusType> getStatusType() {
+        return statusType;
+    }
 
+    public UUID getId() {
+        return id;
+    }
 }
 
