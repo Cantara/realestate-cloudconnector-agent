@@ -1,6 +1,5 @@
 package no.cantara.realestate.cloudconnector.routing;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import no.cantara.realestate.RealEstateException;
@@ -48,6 +47,7 @@ public class ObservationDistributor implements Runnable {
             }
         }
         distributedMeter = metricRegistry.meter("ObservationsDistributed");
+        /*
         metricRegistry.register(MetricRegistry.name(ObservationDistributor.class, "ObservationsDistributed", "total"),
                 new Gauge<Long>() {
                     @Override
@@ -55,6 +55,8 @@ public class ObservationDistributor implements Runnable {
                         return observedValueDistributedCount;
                     }
                 });
+
+         */
     }
 
     @Override

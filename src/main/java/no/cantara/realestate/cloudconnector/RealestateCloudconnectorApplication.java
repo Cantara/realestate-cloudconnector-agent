@@ -4,8 +4,12 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheck;
 import no.cantara.config.ApplicationProperties;
+import no.cantara.realestate.cloudconnector.audit.AuditResource;
+import no.cantara.realestate.cloudconnector.audit.AuditTrail;
+import no.cantara.realestate.cloudconnector.audit.InMemoryAuditTrail;
 import no.cantara.realestate.cloudconnector.notifications.NotificationService;
 import no.cantara.realestate.cloudconnector.notifications.SlackNotificationService;
+import no.cantara.realestate.cloudconnector.observations.ObservationMesstageStubs;
 import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMessageRouter;
 import no.cantara.realestate.cloudconnector.rec.RecRepositoryInMemory;
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
@@ -13,6 +17,8 @@ import no.cantara.realestate.cloudconnector.routing.ObservationDistributor;
 import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensorid.InMemorySensorIdRepository;
 import no.cantara.realestate.cloudconnector.sensorid.SensorIdRepository;
+import no.cantara.realestate.cloudconnector.simulators.distribution.ObservationDistributionResource;
+import no.cantara.realestate.cloudconnector.simulators.distribution.ObservationDistributionServiceStub;
 import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorPresentValueIngestionService;
 import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorTrendsIngestionService;
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedCo2Sensor;
@@ -21,7 +27,9 @@ import no.cantara.realestate.cloudconnector.status.HealthListener;
 import no.cantara.realestate.cloudconnector.status.RecRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SensorIdsRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
+import no.cantara.realestate.distribution.ObservationDistributionClient;
 import no.cantara.realestate.observations.ObservationListener;
+import no.cantara.realestate.observations.ObservationMessage;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.realestate.plugins.notifications.NotificationListener;
@@ -53,12 +61,12 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private HealthListener notificationListener;
     private NotificationService notificationService;
     private Map<String, DistributionService> distributionServices;
-
+    protected AuditTrail auditTrail;
     private Map<String, IngestionService> ingestionServices;
     private ObservationsRepository observationsRepository;
     private ObservationDistributor observationDistributor;
     private RecRepository recRepository;
-//    private MappedIdRepository mappedIdRepository;
+    //    private MappedIdRepository mappedIdRepository;
     private SensorIdRepository sensorIdRepository;
     private Thread observationDistributorThread;
     private MetricRegistry metricRegistry;
@@ -85,10 +93,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
         try {
             RealestateCloudconnectorApplication application = new RealestateCloudconnectorApplication(config).init().start();
-            String baseUrl = "http://localhost:"+config.get("server.port")+config.get("server.context-path");
+            String baseUrl = "http://localhost:" + config.get("server.port") + config.get("server.context-path");
             log.info("Server started. See status on {}/health", baseUrl);
             log.info("   SensorIds: {}/sensorids/status", baseUrl);
             log.info("   Recs: {}/rec/status", baseUrl);
+            log.info("   Audit: {}/audit", baseUrl);
 //            application.startImportingObservations();
         } catch (Exception e) {
             log.error("Failed to start RealestateCloudconnectorApplication", e);
@@ -118,6 +127,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         if (metricRegistry == null) {
             throw new RealestateCloudconnectorException("Missing Metric Registry");
         }
+        initAuditTrail();
         recRepository = createRecRepository(useSimulatedSensors);
         put(RecRepository.class, recRepository);
         //Disable MappedIdRepository for now
@@ -140,6 +150,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         initRouter();
         initObservationDistributor();
         */
+        initObservationDistributor();
 
         //Setup Metrics observation
         initMetrics();
@@ -151,6 +162,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 //        MappedIdRepositoryResource mappedIdRepositoryResource = initAndRegisterJaxRsWsComponent(MappedIdRepositoryResource.class, this::createMappedIdRepositoryStatusResource);
         RecRepositoryResource recRepositoryResource = initAndRegisterJaxRsWsComponent(RecRepositoryResource.class, this::createRecRepositoryStatusResource);
         SensorIdsRepositoryResource sensorIdRepositoryResource = initAndRegisterJaxRsWsComponent(SensorIdsRepositoryResource.class, this::createSensorIdRepositoryResource);
+        ObservationDistributionResource observationDistributionResource = initAndRegisterJaxRsWsComponent(ObservationDistributionResource.class, this::createObservationDistributionResource);
+
         /*
         boolean doImportData = config.asBoolean("import.data");
         enableStream = config.asBoolean("sd.stream.enabled");
@@ -198,6 +211,12 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         //Wire up the stream importer
 
 
+    }
+
+    private void initAuditTrail() {
+        auditTrail = init(InMemoryAuditTrail.class, InMemoryAuditTrail::new);
+        put(AuditTrail.class, auditTrail);
+        AuditResource auditResource = initAndRegisterJaxRsWsComponent(AuditResource.class, () -> new AuditResource(auditTrail));
     }
 
     private void initMetrics() {
@@ -282,7 +301,19 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         templateEngine.setTemplateResolver(templateResolver);
         return new SensorIdsRepositoryResource(templateEngine, sensorIdRepository);
     }
-    //createSensorIdRepositoryResource
+
+    private ObservationDistributionResource createObservationDistributionResource() {
+        TemplateEngine templateEngine = new TemplateEngine();
+        ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
+        templateResolver.setTemplateMode(TemplateMode.HTML);
+        templateResolver.setPrefix("/templates/");
+        templateResolver.setSuffix(".html");
+        templateResolver.setCharacterEncoding("UTF-8");
+        templateResolver.setCacheable(false); // Set to true for production
+        templateEngine.setTemplateResolver(templateResolver);
+        ObservationDistributionClient observationDistributionStub = get(ObservationDistributionClient.class);
+        return new ObservationDistributionResource(templateEngine, observationDistributionStub);
+    }
 
     protected void subscribeToSensors(boolean useSimulatedSensors) {
 
@@ -504,11 +535,23 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     private void initObservationDistributor() {
+        //Stub implementation to be replaced with AzureObservationDistributionClient or other implementations
+        List<DistributionService> distributionServicesList = new ArrayList<>();
+        DistributionService observationDistributionClient = new ObservationDistributionServiceStub();
+        put(DistributionService.class, observationDistributionClient);
+        if(observationDistributionClient instanceof ObservationDistributionClient) {
+            put(ObservationDistributionClient.class, (ObservationDistributionClient) observationDistributionClient);
+        }
+        distributionServicesList.add(observationDistributionClient);
+        log.info("Establishing and verifying connection to Azure.");
+        ObservationMessage stubMessage = ObservationMesstageStubs.buildStubObservation();
+        observationDistributionClient.publish(stubMessage);
         if (observationsRepository == null) {
             log.warn("ObservationsRepository is null. Cannot start ObservationDistributor");
             throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
         }
-        observationDistributor = new ObservationDistributor(observationsRepository, new ArrayList<>(distributionServices.values()), recRepository, metricRegistry);
+        // End stub implementation
+        observationDistributor = new ObservationDistributor(observationsRepository, distributionServicesList, recRepository, metricRegistry);
         get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy", observationDistributor::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed", observationDistributor::getObservedValueDistributedCount);
         observationDistributorThread = new Thread(observationDistributor);
