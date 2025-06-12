@@ -4,12 +4,12 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheck;
 import no.cantara.config.ApplicationProperties;
+import no.cantara.realestate.azure.AzureObservationDistributionClient;
 import no.cantara.realestate.cloudconnector.audit.AuditResource;
 import no.cantara.realestate.cloudconnector.audit.AuditTrail;
 import no.cantara.realestate.cloudconnector.audit.InMemoryAuditTrail;
 import no.cantara.realestate.cloudconnector.notifications.NotificationService;
 import no.cantara.realestate.cloudconnector.notifications.SlackNotificationService;
-import no.cantara.realestate.cloudconnector.observations.ObservationMesstageStubs;
 import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMessageRouter;
 import no.cantara.realestate.cloudconnector.rec.RecRepositoryInMemory;
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
@@ -29,7 +29,6 @@ import no.cantara.realestate.cloudconnector.status.SensorIdsRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
 import no.cantara.realestate.distribution.ObservationDistributionClient;
 import no.cantara.realestate.observations.ObservationListener;
-import no.cantara.realestate.observations.ObservationMessage;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
 import no.cantara.realestate.plugins.notifications.NotificationListener;
@@ -60,7 +59,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
     private HealthListener notificationListener;
     private NotificationService notificationService;
-    private Map<String, DistributionService> distributionServices;
+    private List<DistributionService> distributionServices;
     protected AuditTrail auditTrail;
     private Map<String, IngestionService> ingestionServices;
     private ObservationsRepository observationsRepository;
@@ -137,7 +136,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         put(SensorIdRepository.class, sensorIdRepository);
         initNotificationServices();
         initObservationReceiver();
-        initDistributionController();
+//        initDistributionController();
         initObservationDistributor();
         put(ObservationsRepository.class, observationsRepository);
 //        Disable for now
@@ -150,7 +149,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         initRouter();
         initObservationDistributor();
         */
-        initObservationDistributor();
+//        initObservationDistributor();
 
         //Setup Metrics observation
         initMetrics();
@@ -483,7 +482,24 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
                 });
     }
 
+    /*
+    @Deprecated
     protected void initDistributionController() {
+        boolean useInfluxDb = config.asBoolean("influxdb.enabled", false);
+        if (useInfluxDb) {
+            log.info("Using InfluxDB for distribution.");
+        } else {
+            log.info("InfluxDB is not enabled.");
+        }
+        boolean useAzureIoThub = config.asBoolean("azure.iot.enabled", false);
+        if (useAzureIoThub) {
+            log.info("Using Azure IoT Hub for distribution.");
+            String deviceConnectionString = config.get("azure.iot.connectionString");
+            AzureObservationDistributionClient azureObservationsClient = new AzureObservationDistributionClient(deviceConnectionString);
+        } else {
+            log.info("Azure IoT Hub is not enabled.");
+
+        }
         ServiceLoader<DistributionService> distributionServicesFound = ServiceLoader.load(DistributionService.class);
 
         distributionServices = new HashMap<>();
@@ -491,24 +507,12 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.info("ServiceLoader found a Distribution service called {}!", service.getName());
             service.initialize(null);
             distributionServices.put(service.getName(), service);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy", service::isHealthy);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsDistributed", service::getNumberOfMessagesPublished);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedDistributed", service::getNumberOfMessagesFailed);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofMessagesInQueue", service::getNumberOfMessagesInQueue);
-            get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-whenLastMessageDistributed", service::getWhenLastMessageDistributed);
-            get(StingrayHealthService.class).registerHealthCheck(service.getName() + "-isHealthy:", new HealthCheck() {
-                @Override
-                protected HealthCheck.Result check() throws Exception {
-                    if (service.isHealthy()) {
-                        return Result.healthy();
-                    } else {
-                        return Result.unhealthy(service.getName() + " Failed on connection or login ");
-                    }
-                }
-            });
+            addDistributionServiceHealth(service);
         }
         log.info("ServiceLoader found " + distributionServices.size() + " distribution services!");
     }
+
+     */
 
     private void initNotificationServices() {
         ServiceLoader<NotificationService> notificationServices = ServiceLoader.load(NotificationService.class);
@@ -535,8 +539,12 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     private void initObservationDistributor() {
-        //Stub implementation to be replaced with AzureObservationDistributionClient or other implementations
-        List<DistributionService> distributionServicesList = new ArrayList<>();
+//        List<DistributionService> distributionServices = new ArrayList<>();
+        if (distributionServices == null) {
+            distributionServices = new ArrayList<>();
+        }
+        put("DistributionServices", distributionServices);
+        /*
         DistributionService observationDistributionClient = new ObservationDistributionServiceStub(auditTrail);
         put(DistributionService.class, observationDistributionClient);
         if(observationDistributionClient instanceof ObservationDistributionClient) {
@@ -550,8 +558,54 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.warn("ObservationsRepository is null. Cannot start ObservationDistributor");
             throw new RealestateCloudconnectorException("ObservationsRepository is null. Cannot start ObservationDistributor");
         }
-        // End stub implementation
-        observationDistributor = new ObservationDistributor(observationsRepository, distributionServicesList, recRepository, metricRegistry, auditTrail);
+
+         */
+        // Stub implementation
+        boolean useDistributionServiceStub = config.asBoolean("distributionServiceStub.enabled", true);
+        if (useDistributionServiceStub) {
+            log.info("Using ObservationDistributionServiceStub for distribution.");
+            ObservationDistributionServiceStub observationDistributionServiceStub = new ObservationDistributionServiceStub(auditTrail);
+            distributionServices.add(observationDistributionServiceStub);
+        } else {
+            log.info("ObservationDistributionServiceStub is not enabled.");
+        }
+
+        // InfluxDb
+        boolean useInfluxDb = config.asBoolean("influxdb.enabled", false);
+        if (useInfluxDb) {
+            log.info("Using InfluxDB for distribution.");
+        } else {
+            log.info("InfluxDB is not enabled.");
+        }
+        // Azure IoT Hub
+        boolean useAzureIoThub = config.asBoolean("azure.iot.enabled", false);
+        if (useAzureIoThub) {
+            log.info("Using Azure IoT Hub for distribution.");
+            String deviceConnectionString = config.get("azure.iot.connectionString");
+            AzureObservationDistributionClient azureObservationsClient = new AzureObservationDistributionClient(deviceConnectionString);
+            distributionServices.add(azureObservationsClient);
+        } else {
+            log.info("Azure IoT Hub is not enabled.");
+        }
+
+        for (DistributionService service : distributionServices) {
+            try {
+                log.info("Initializing Distribution service called {}!", service.getName());
+                service.initialize(null);
+                //Add the service to be discovered by other services in the application.
+                put(service.getClass().getName(), service);
+                //Enable health checks for the distribution service
+                addDistributionServiceHealth(service);
+            } catch (Exception e) {
+                log.error("Failed to initialize Distribution service: " + service.getName(), e);
+                throw new RealestateCloudconnectorException("Failed to initialize Distribution service: " + service.getName(), e);
+            }
+
+        }
+        log.info("ServiceLoader found " + distributionServices.size() + " distribution services!");
+
+
+        observationDistributor = new ObservationDistributor(observationsRepository, distributionServices, recRepository, metricRegistry, auditTrail);
         get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy", observationDistributor::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed", observationDistributor::getObservedValueDistributedCount);
         observationDistributorThread = new Thread(observationDistributor);
@@ -570,6 +624,24 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
                 }
             });
          */
+    }
+
+    protected void addDistributionServiceHealth(DistributionService service) {
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-isHealthy", service::isHealthy);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofObservationsDistributed", service::getNumberOfMessagesPublished);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedDistributed", service::getNumberOfMessagesFailed);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofMessagesInQueue", service::getNumberOfMessagesInQueue);
+        get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-whenLastMessageDistributed", service::getWhenLastMessageDistributed);
+        get(StingrayHealthService.class).registerHealthCheck(service.getName() + "-isHealthy:", new HealthCheck() {
+            @Override
+            protected Result check() throws Exception {
+                if (service.isHealthy()) {
+                    return Result.healthy();
+                } else {
+                    return Result.unhealthy(service.getName() + " Failed on connection or login ");
+                }
+            }
+        });
     }
 
     protected RecRepository createRecRepository(boolean useSimulatedSensors) {
