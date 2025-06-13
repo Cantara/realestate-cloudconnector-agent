@@ -15,7 +15,7 @@
     <version>8</version>
   </parent>
   <scm>
-    <developerConnection>scm:git:ssh://git@github.com/cantara/realestate--cloudconnector-agent.git</developerConnection>
+    <developerConnection>scm:git:ssh://git@github.com/cantara/realestate-cloudconnector-agent.git</developerConnection>
     <connection>scm:git:https://github.com/cantara/realestate-cloudconnector-agent.git</connection>
     <url>https://github.com/cantara/realestate-cloudconnector-agent</url>
     <tag>realestate-cloudconnector-agent-0.14.4</tag>
