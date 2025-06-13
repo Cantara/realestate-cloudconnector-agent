@@ -97,6 +97,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
             log.info("   SensorIds: {}/sensorids/status", baseUrl);
             log.info("   Recs: {}/rec/status", baseUrl);
             log.info("   Audit: {}/audit", baseUrl);
+            log.info("   Distribution: {}/distribution", baseUrl);
 //            application.startImportingObservations();
         } catch (Exception e) {
             log.error("Failed to start RealestateCloudconnectorApplication", e);
@@ -310,8 +311,17 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         templateResolver.setCharacterEncoding("UTF-8");
         templateResolver.setCacheable(false); // Set to true for production
         templateEngine.setTemplateResolver(templateResolver);
-        ObservationDistributionClient observationDistributionStub = get(ObservationDistributionClient.class);
-        return new ObservationDistributionResource(templateEngine, observationDistributionStub);
+        List<ObservationDistributionClient> observationDistributionClients = new ArrayList<>();
+        AzureObservationDistributionClient azureObservationDistributionClient = getOrNull(AzureObservationDistributionClient.class);
+        if (azureObservationDistributionClient != null) {
+            observationDistributionClients.add(azureObservationDistributionClient);
+        }
+        ObservationDistributionServiceStub observationDistributionStub = getOrNull(ObservationDistributionServiceStub.class);
+        if (observationDistributionStub != null) {
+            observationDistributionClients.add(observationDistributionStub);
+        }
+
+        return new ObservationDistributionResource(templateEngine, observationDistributionClients);
     }
 
     protected void subscribeToSensors(boolean useSimulatedSensors) {
