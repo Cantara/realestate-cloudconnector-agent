@@ -87,4 +87,27 @@ class InMemorySensorIdRepositoryTest {
         repository.add(new MetasysSensorId("objectId1", "objectReference1"));
         assertEquals(3, repository.size());
     }
+
+    @Test
+    void testWithIdentifier() {
+        SensorId sensorWithMetasysObjectId = new MetasysSensorId("Sensor-metasys3", "objectId3");
+        repository.add(sensorWithMetasysObjectId);
+
+        repository.add( new MetasysSensorId("Sensor-metasys4", "objectId4"));
+        repository.add( new MetasysSensorId("Sensor-metasys5", "objectId5"));
+        repository.add(new DesigoSensorId("Sensor-desigo2","desigoId2", "desigoPropertyId2"));
+
+        List<SensorId> result = repository.find(MetasysSensorId.METASYS_OBJECT_ID, "objectId3");
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Sensor-metasys3", result.get(0).getTwinId());
+        assertEquals(0,repository.find(MetasysSensorId.METASYS_OBJECT_ID, "objectId6").size());
+
+        List<SensorId> desigo = repository.find(DesigoSensorId.DESIGO_ID, "desigoId2", DesigoSensorId.DESIGO_PROPERTY_ID, "desigoPropertyId2");
+        assertNotNull(result);
+        assertEquals(1, desigo.size());
+        assertEquals("Sensor-desigo2", desigo.get(0).getTwinId());
+        assertEquals(0,repository.find(DesigoSensorId.DESIGO_ID, "desigoId3").size());
+        assertEquals(0, repository.find(DesigoSensorId.DESIGO_ID, "desigoId3", DesigoSensorId.DESIGO_PROPERTY_ID, "desigoPropertyId3").size());
+    }
 }

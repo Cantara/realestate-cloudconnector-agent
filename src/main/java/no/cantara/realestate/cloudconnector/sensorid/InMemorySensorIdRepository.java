@@ -39,6 +39,63 @@ public class InMemorySensorIdRepository implements SensorIdRepository {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Find sensors that match a specific identifier key and value.
+     *
+     * @param identifierKey The name of the identifier to match
+     * @param identifierValue The value of the identifier to match
+     * @return A list of sensors matching the criteria
+     */
+    public List<SensorId> find(String identifierKey, String identifierValue) {
+        if (identifierKey == null || identifierValue == null) {
+            return Collections.emptyList();
+        }
+
+        return sensorIds.stream()
+                .filter(sensorId -> matchesidentifier(sensorId, identifierKey, identifierValue))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Find sensors that match two specific identifier identifiers and values.
+     *
+     * @param identifierName1 The name of the first identifier to match
+     * @param identifierValue1 The value of the first identifier to match
+     * @param identifierName2 The name of the second identifier to match
+     * @param identifierValue2 The value of the second identifier to match
+     * @return A list of sensors matching all criteria
+     */
+    public List<SensorId> find(String identifierName1, String identifierValue1,
+                               String identifierName2, String identifierValue2) {
+        if (identifierName1 == null || identifierValue1 == null ||
+                identifierName2 == null || identifierValue2 == null) {
+            return Collections.emptyList();
+        }
+
+        return sensorIds.stream()
+                .filter(sensorId -> matchesidentifier(sensorId, identifierName1, identifierValue1) &&
+                        matchesidentifier(sensorId, identifierName2, identifierValue2))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Helper method to check if a sensor matches a specific identifier name and value.
+     *
+     * @param sensor The sensor to check
+     * @param identifierKey The name of the identifier to match
+     * @param identifierValue The value of the identifier to match
+     * @return true if the sensor has the identifier with the specified value
+     */
+    private boolean matchesidentifier(SensorId sensor, String identifierKey, String identifierValue) {
+        if (sensor == null) {
+            return false;
+        }
+        boolean isAMatch = identifierKey != null && sensor.getIdentifier(identifierKey) != null &&
+                sensor.getIdentifier(identifierKey).equals(identifierValue);
+        return isAMatch;
+        
+    }
+
     @Override
     public List<SensorId> find(SensorIdQuery sensorIdQuery) {
         return List.of();
