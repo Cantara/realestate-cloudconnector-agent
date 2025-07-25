@@ -1,17 +1,13 @@
 package no.cantara.realestate.cloudconnector.audit;
 
-import edu.emory.mathcs.backport.java.util.LinkedList;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class AuditState {
 
-    List<AuditEvent> events = new ArrayList<>();
-    List<AuditEvent> subscribedEvents = new LinkedList();
+    private Map<AuditEvent.Type, LinkedList<AuditEvent>> events = new HashMap<>();
     private AuditEvent lastObservedTrendEvent = null;
     private AuditEvent lastObservedStreamEvent = null;
     private AuditEvent lastObservedPresentValueEvent = null;
@@ -29,15 +25,24 @@ public class AuditState {
     }
 
     public void addEvent(AuditEvent event) {
-        events.add( event);
+        if (event == null ) {
+            return;
+        }
+        AuditEvent.Type eventType = event.getType();
+        LinkedList<AuditEvent> eventsForType = events.get(eventType);
+        if (eventsForType == null) {
+            eventsForType = new LinkedList<>();
+            events.put(eventType, eventsForType);
+        }
+        eventsForType.add(event);
+        if (eventsForType.size() > 10) {
+            eventsForType.removeFirst();
+        }
     }
 
     public void setSubscribed(String sensorId, String comment) {
         AuditEvent event = new AuditEvent(sensorId, AuditEvent.Type.SUBSCRIBED, comment);
-        subscribedEvents.add(event);
-        if (subscribedEvents.size() > 10) {
-            subscribedEvents.remove(0);
-        }
+        addEvent(event);
     }
 
 
@@ -46,9 +51,7 @@ public class AuditState {
     }
 
     public List<AuditEvent> allEventsByTimestamp() {
-        List<AuditEvent> allEvents = new ArrayList<>(events);
-        allEvents.addAll(events);
-        allEvents.addAll(subscribedEvents);
+        List<AuditEvent> allEvents = events.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
         if (lastObservedTrendEvent != null) {
             allEvents.add(lastObservedTrendEvent);
         }
