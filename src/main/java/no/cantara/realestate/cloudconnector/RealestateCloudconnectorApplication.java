@@ -8,6 +8,7 @@ import no.cantara.realestate.azure.AzureObservationDistributionClient;
 import no.cantara.realestate.cloudconnector.audit.AuditResource;
 import no.cantara.realestate.cloudconnector.audit.AuditTrail;
 import no.cantara.realestate.cloudconnector.audit.InMemoryAuditTrail;
+import no.cantara.realestate.cloudconnector.metrics.AzureApplicationInsightsMetricsClient;
 import no.cantara.realestate.cloudconnector.notifications.NotificationService;
 import no.cantara.realestate.cloudconnector.notifications.SlackNotificationService;
 import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMessageRouter;
@@ -28,6 +29,7 @@ import no.cantara.realestate.cloudconnector.status.RecRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SensorIdsRepositoryResource;
 import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
 import no.cantara.realestate.distribution.ObservationDistributionClient;
+import no.cantara.realestate.metrics.MetricsDistributionClient;
 import no.cantara.realestate.observations.ObservationListener;
 import no.cantara.realestate.plugins.distribution.DistributionService;
 import no.cantara.realestate.plugins.ingestion.IngestionService;
@@ -68,7 +70,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     //    private MappedIdRepository mappedIdRepository;
     private SensorIdRepository sensorIdRepository;
     private Thread observationDistributorThread;
-    private MetricRegistry metricRegistry;
+    protected MetricRegistry metricRegistry;
+    protected MetricsDistributionClient metricsDistributionClient;
 
     public RealestateCloudconnectorApplication(ApplicationProperties config) {
         super("RealestateCloudconnector",
@@ -123,10 +126,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         boolean useSimulatedSensors = config.asBoolean("sensormappings.simulator.enabled");
         initBuiltinDefaults();
         StingraySecurity.initSecurity(this);
-        metricRegistry = get(MetricRegistry.class);
-        if (metricRegistry == null) {
-            throw new RealestateCloudconnectorException("Missing Metric Registry");
-        }
+        initMetrics();
         initAuditTrail();
         recRepository = createRecRepository(useSimulatedSensors);
         put(RecRepository.class, recRepository);
@@ -153,7 +153,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 //        initObservationDistributor();
 
         //Setup Metrics observation
-        initMetrics();
+//        initMetrics();
         initSafeShutdownMetrics();
 
         //StatusGui
@@ -220,6 +220,11 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     private void initMetrics() {
+        metricsDistributionClient = init(MetricsDistributionClient.class, () -> new AzureApplicationInsightsMetricsClient());
+        metricRegistry = get(MetricRegistry.class);
+        if (metricRegistry == null) {
+            throw new RealestateCloudconnectorException("Missing Metric Registry");
+        }
         metricRegistry.register(MetricRegistry.name(ObservationsRepository.class, "ObservationsQueue", "size"),
                 new Gauge<Long>() {
                     @Override
