@@ -23,10 +23,8 @@ public class RecRepositoryResource {
 
     private final RecRepository recRepository;
     private final TemplateEngine templateEngine;
-    private final String contextPath;
 
-    public RecRepositoryResource(String contextPath, TemplateEngine templateEngine, RecRepository recRepository) {
-        this.contextPath = contextPath;
+    public RecRepositoryResource( TemplateEngine templateEngine, RecRepository recRepository) {
         this.templateEngine = templateEngine;
         this.recRepository = recRepository;
     }
@@ -44,8 +42,6 @@ public class RecRepositoryResource {
         org.thymeleaf.context.Context ctx = new org.thymeleaf.context.Context();
         ctx.setVariable("count", size);
         ctx.setVariable("recTags", recTagsList);
-
-        ctx.setVariable("contextPath", contextPath);
 
         StringWriter stringWriter = new StringWriter();
         templateEngine.process("RecRepositoryStatus", ctx, stringWriter);

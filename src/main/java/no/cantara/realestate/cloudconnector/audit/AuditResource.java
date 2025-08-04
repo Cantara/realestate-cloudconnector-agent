@@ -22,19 +22,17 @@ public class AuditResource {
     private static final Logger log = getLogger(AuditResource.class);
 
     private final AuditTrail auditTrail;
-    private final String contextPath;
     private final String htmlHead;
 
-    public AuditResource(String contextPath,AuditTrail auditTrail) {
-        this.contextPath = contextPath;
+    public AuditResource(AuditTrail auditTrail) {
         this.auditTrail = auditTrail;
         htmlHead = """
                 <html>
                 <head>
                     <title>Audit Trail</title>
-                    <link rel="icon" type="image/x-icon" href="%s/favicon.ico">
+                    <link rel="icon" type="image/x-icon" href="./favicon.ico">
                 </head>
-                """.formatted(contextPath);
+                """;
     }
 
     //List all audit states as html

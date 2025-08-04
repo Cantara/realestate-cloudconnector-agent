@@ -27,10 +27,8 @@ public class SensorIdsRepositoryResource {
 
     private final SensorIdRepository sensorIdRepository;
     private final TemplateEngine templateEngine;
-    private final String contextPath;
 
-    public SensorIdsRepositoryResource(String contextPath,TemplateEngine templateEngine, SensorIdRepository sensorIdRepository) {
-        this.contextPath = contextPath;
+    public SensorIdsRepositoryResource(TemplateEngine templateEngine, SensorIdRepository sensorIdRepository) {
         this.templateEngine = templateEngine;
         this.sensorIdRepository = sensorIdRepository;
     }
@@ -66,7 +64,6 @@ public class SensorIdsRepositoryResource {
         long selectionCount = sensorList.size();
 
         Context ctx = new Context();
-        ctx.setVariable("contextPath", contextPath);
         ctx.setVariable("totalCount", totalCount);
         ctx.setVariable("selectionCount", selectionCount);
         ctx.setVariable("sensorList", sensorList);

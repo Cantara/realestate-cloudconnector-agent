@@ -20,10 +20,8 @@ public class SystemStatusResource {
 
     private boolean isHealty = true;
 
-    private final String contextPath;
 
-    public SystemStatusResource(String contextPath) {
-        this.contextPath = contextPath;
+    public SystemStatusResource() {
     }
 
 
@@ -65,7 +63,6 @@ public class SystemStatusResource {
         templateEngine.setTemplateResolver(templateResolver);
 
         Context ctx = new Context();
-        ctx.setVariable("contextPath", contextPath);
         ctx.setVariable("inputServiceStatus", "OK");
         ctx.setVariable("routerServiceStatus", "OK");
         ctx.setVariable("outputServiceStatus", "OK");
@@ -87,7 +84,7 @@ public class SystemStatusResource {
                 <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <link rel="icon" type="image/x-icon" href="%s/favicon.ico">
+                <link rel="icon" type="image/x-icon" href="../favicon.ico">
                 <title>Message Flow Status</title>
                 <style>
                   #messageFlow {
@@ -229,7 +226,7 @@ public class SystemStatusResource {
                   </script>
                 </body>
                 </html>
-                """.formatted(contextPath);
+                """;
         return Response.ok(html).build();
     }
 }

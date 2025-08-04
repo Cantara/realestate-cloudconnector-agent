@@ -26,10 +26,8 @@ public class ObservationDistributionResource {
 
     private final List<ObservationDistributionClient> distributionClients;
     private final TemplateEngine templateEngine;
-    private final String contextPath;
 
-    public ObservationDistributionResource(String contextPath, TemplateEngine templateEngine, List<ObservationDistributionClient> distributionClients) {
-        this.contextPath = contextPath;
+    public ObservationDistributionResource(TemplateEngine templateEngine, List<ObservationDistributionClient> distributionClients) {
         this.templateEngine = templateEngine;
         this.distributionClients = distributionClients;
     }
@@ -44,7 +42,7 @@ public class ObservationDistributionResource {
                 <html>
                 <head>
                     <title>Distributed Observations</title>
-                    <link rel="icon" type="image/x-icon" href="%s/favicon.ico">
+                    <link rel="icon" type="image/x-icon" href="./favicon.ico">
                 </head>
                 <body>
                 <h1>Distributed Observations</h1>
@@ -55,7 +53,7 @@ public class ObservationDistributionResource {
                 </ul>
                 </body>
                 </html>
-                """.formatted(contextPath);
+                """;
         return Response.ok(body, MediaType.TEXT_HTML_TYPE).build();
 
 
