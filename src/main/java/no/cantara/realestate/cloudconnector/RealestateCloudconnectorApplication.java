@@ -227,7 +227,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     private void initAuditTrail() {
         auditTrail = init(InMemoryAuditTrail.class, InMemoryAuditTrail::new);
         put(AuditTrail.class, auditTrail);
-        AuditResource auditResource = initAndRegisterJaxRsWsComponent(AuditResource.class, () -> new AuditResource(auditTrail));
+        String contextPath = contextPath();
+        AuditResource auditResource = initAndRegisterJaxRsWsComponent(AuditResource.class, () -> new AuditResource(contextPath,auditTrail));
     }
 
     private void initMetrics() {
@@ -303,7 +304,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         templateResolver.setCharacterEncoding("UTF-8");
         templateResolver.setCacheable(false); // Set to true for production
         templateEngine.setTemplateResolver(templateResolver);
-        return new RecRepositoryResource(templateEngine, recRepository);
+        String contextPath = contextPath();
+        return new RecRepositoryResource(contextPath,templateEngine, recRepository);
     }
 
     private SensorIdsRepositoryResource createSensorIdRepositoryResource() {
@@ -315,7 +317,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         templateResolver.setCharacterEncoding("UTF-8");
         templateResolver.setCacheable(false); // Set to true for production
         templateEngine.setTemplateResolver(templateResolver);
-        return new SensorIdsRepositoryResource(templateEngine, sensorIdRepository);
+        String contextPath = contextPath();
+        return new SensorIdsRepositoryResource(contextPath,templateEngine, sensorIdRepository);
     }
 
     private ObservationDistributionResource createObservationDistributionResource() {
@@ -336,8 +339,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         if (observationDistributionStub != null) {
             observationDistributionClients.add(observationDistributionStub);
         }
-
-        return new ObservationDistributionResource(templateEngine, observationDistributionClients);
+        String contextPath = contextPath();
+        return new ObservationDistributionResource(contextPath,templateEngine, observationDistributionClients);
     }
 
     protected void subscribeToSensors(boolean useSimulatedSensors) {
@@ -740,8 +743,8 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
     }
 
     private SystemStatusResource createSystemStatusResource() {
-        Random random = get(Random.class);
-        return new SystemStatusResource(random);
+        String contextPath = contextPath();
+        return new SystemStatusResource(contextPath);
     }
 
 

@@ -22,9 +22,19 @@ public class AuditResource {
     private static final Logger log = getLogger(AuditResource.class);
 
     private final AuditTrail auditTrail;
+    private final String contextPath;
+    private final String htmlHead;
 
-    public AuditResource(AuditTrail auditTrail) {
+    public AuditResource(String contextPath,AuditTrail auditTrail) {
+        this.contextPath = contextPath;
         this.auditTrail = auditTrail;
+        htmlHead = """
+                <html>
+                <head>
+                    <title>Audit Trail</title>
+                    <link rel="icon" type="image/x-icon" href="%s/favicon.ico">
+                </head>
+                """.formatted(contextPath);
     }
 
     //List all audit states as html
@@ -35,16 +45,17 @@ public class AuditResource {
     @StingrayAction("auditBySensorId")
     @StingraySecurityOverride
     public Response getstr(@PathParam("sensorId") String sensorId) {
+
         Optional<AuditState> state = auditTrail.getState(sensorId);
         if (!state.isPresent()) {
-            return Response.ok( "<html><body><h2>No state found for sensorId: " + sensorId + "</h2></body></html>").build();
+            return Response.ok( htmlHead + "<body><h2>No state found for sensorId: " + sensorId + "</h2></body></html>").build();
         }
         List<AuditEvent> events = state.get().allEventsByTimestamp();
         if (events.isEmpty()) {
-            return Response.ok( "<html><body><h2>No events found for sensorId: " + sensorId + "</h2></body></html>").build();
+            return Response.ok( htmlHead + "<body><h2>No events found for sensorId: " + sensorId + "</h2></body></html>").build();
         }
 
-        StringBuilder html = new StringBuilder("<html><body>");
+        StringBuilder html = new StringBuilder(htmlHead + "<body>");
         html.append("<h1>Audit for Sensor: ").append(sensorId).append("</h1><ul>");
         for (AuditEvent event : events) {
             html.append("<li>")
@@ -65,7 +76,7 @@ public class AuditResource {
     public Response getAllStates() {
         Map<String, AuditState> allStates = auditTrail.getAll();
         if (allStates.isEmpty()) {
-            return Response.ok("<html><body><h2>No audit states found</h2></body></html>", MediaType.TEXT_HTML).build();
+            return Response.ok(htmlHead + "<body><h2>No audit states found</h2></body></html>", MediaType.TEXT_HTML).build();
         }
 
         StringBuilder html = new StringBuilder("<html><body>");

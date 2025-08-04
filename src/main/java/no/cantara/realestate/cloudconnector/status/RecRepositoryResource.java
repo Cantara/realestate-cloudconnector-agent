@@ -11,7 +11,6 @@ import no.cantara.realestate.sensors.SensorId;
 import no.cantara.stingray.security.application.StingrayAction;
 import no.cantara.stingray.security.application.StingraySecurityOverride;
 import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -24,8 +23,10 @@ public class RecRepositoryResource {
 
     private final RecRepository recRepository;
     private final TemplateEngine templateEngine;
+    private final String contextPath;
 
-    public RecRepositoryResource(TemplateEngine templateEngine, RecRepository recRepository) {
+    public RecRepositoryResource(String contextPath, TemplateEngine templateEngine, RecRepository recRepository) {
+        this.contextPath = contextPath;
         this.templateEngine = templateEngine;
         this.recRepository = recRepository;
     }
@@ -40,14 +41,16 @@ public class RecRepositoryResource {
         Map<SensorId,RecTags> sensorRecMap = recRepository.getAll();
         List<Map<String, Object>> recTagsList = buildRecList(sensorRecMap);
 
-        Context ctx = new Context();
+        org.thymeleaf.context.Context ctx = new org.thymeleaf.context.Context();
         ctx.setVariable("count", size);
         ctx.setVariable("recTags", recTagsList);
+
+        ctx.setVariable("contextPath", contextPath);
+
         StringWriter stringWriter = new StringWriter();
         templateEngine.process("RecRepositoryStatus", ctx, stringWriter);
         String html = stringWriter.toString();
         return Response.ok(html).build();
-
     }
 
 

@@ -13,7 +13,6 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import java.io.StringWriter;
-import java.util.Random;
 
 
 @Path("/systemstatus")
@@ -21,11 +20,12 @@ public class SystemStatusResource {
 
     private boolean isHealty = true;
 
-    private final Random random;
+    private final String contextPath;
 
-    public SystemStatusResource(Random random) {
-        this.random = random;
+    public SystemStatusResource(String contextPath) {
+        this.contextPath = contextPath;
     }
+
 
     @GET
     @Path("/status")
@@ -65,6 +65,7 @@ public class SystemStatusResource {
         templateEngine.setTemplateResolver(templateResolver);
 
         Context ctx = new Context();
+        ctx.setVariable("contextPath", contextPath);
         ctx.setVariable("inputServiceStatus", "OK");
         ctx.setVariable("routerServiceStatus", "OK");
         ctx.setVariable("outputServiceStatus", "OK");
@@ -86,6 +87,7 @@ public class SystemStatusResource {
                 <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link rel="icon" type="image/x-icon" href="%s/favicon.ico">
                 <title>Message Flow Status</title>
                 <style>
                   #messageFlow {
@@ -227,7 +229,7 @@ public class SystemStatusResource {
                   </script>
                 </body>
                 </html>
-                """;
+                """.formatted(contextPath);
         return Response.ok(html).build();
     }
 }
