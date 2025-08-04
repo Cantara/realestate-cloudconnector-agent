@@ -22,17 +22,10 @@ public class AuditResource {
     private static final Logger log = getLogger(AuditResource.class);
 
     private final AuditTrail auditTrail;
-    private final String htmlHead;
 
     public AuditResource(AuditTrail auditTrail) {
         this.auditTrail = auditTrail;
-        htmlHead = """
-                <html>
-                <head>
-                    <title>Audit Trail</title>
-                    <link rel="icon" type="image/x-icon" href="./favicon.ico">
-                </head>
-                """;
+
     }
 
     //List all audit states as html
@@ -43,16 +36,25 @@ public class AuditResource {
     @StingrayAction("auditBySensorId")
     @StingraySecurityOverride
     public Response getstr(@PathParam("sensorId") String sensorId) {
+        String htmlHead = """
+                <html>
+                <head>
+                    <title>Audit Details</title>
+                    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+                </head>
+                """;
 
         Optional<AuditState> state = auditTrail.getState(sensorId);
+        //No state found for sensorId: {sensorId}
         if (!state.isPresent()) {
             return Response.ok( htmlHead + "<body><h2>No state found for sensorId: " + sensorId + "</h2></body></html>").build();
         }
+        //No events found for sensorId: {sensorId}
         List<AuditEvent> events = state.get().allEventsByTimestamp();
         if (events.isEmpty()) {
             return Response.ok( htmlHead + "<body><h2>No events found for sensorId: " + sensorId + "</h2></body></html>").build();
         }
-
+        // Build HTML response with audit events
         StringBuilder html = new StringBuilder(htmlHead + "<body>");
         html.append("<h1>Audit for Sensor: ").append(sensorId).append("</h1><ul>");
         for (AuditEvent event : events) {
@@ -72,6 +74,13 @@ public class AuditResource {
     @StingrayAction("auditAllStates")
     @StingraySecurityOverride
     public Response getAllStates() {
+        String htmlHead = """
+                <html>
+                <head>
+                    <title>Audit Trail</title>
+                    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+                </head>
+                """;
         Map<String, AuditState> allStates = auditTrail.getAll();
         if (allStates.isEmpty()) {
             return Response.ok(htmlHead + "<body><h2>No audit states found</h2></body></html>", MediaType.TEXT_HTML).build();
