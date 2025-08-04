@@ -77,7 +77,7 @@ public class AuditResource {
             return Response.ok(htmlHead + "<body><h2>No audit states found</h2></body></html>", MediaType.TEXT_HTML).build();
         }
 
-        StringBuilder html = new StringBuilder("<html><body>");
+        StringBuilder html = new StringBuilder(htmlHead +"<body>");
         html.append("<h1>All Audit States</h1><table border='1'>");
         html.append("<tr><th>Sensor ID</th><th>Last Observed</th></tr>");
         for (Map.Entry<String, AuditState> entry : allStates.entrySet()) {
