@@ -24,10 +24,7 @@ import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorPresen
 import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorTrendsIngestionService;
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedTempSensor;
-import no.cantara.realestate.cloudconnector.status.HealthListener;
-import no.cantara.realestate.cloudconnector.status.RecRepositoryResource;
-import no.cantara.realestate.cloudconnector.status.SensorIdsRepositoryResource;
-import no.cantara.realestate.cloudconnector.status.SystemStatusResource;
+import no.cantara.realestate.cloudconnector.status.*;
 import no.cantara.realestate.distribution.ObservationDistributionClient;
 import no.cantara.realestate.metrics.MetricsDistributionClient;
 import no.cantara.realestate.observations.ObservationListener;
@@ -126,6 +123,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         boolean useSimulatedSensors = config.asBoolean("sensormappings.simulator.enabled");
         initBuiltinDefaults();
         StingraySecurity.initSecurity(this);
+        FaviconResource faviconResource = initAndRegisterJaxRsWsComponent(FaviconResource.class, this::createFaviconResource);
         initMetrics();
         initAuditTrail();
         recRepository = createRecRepository(useSimulatedSensors);
@@ -211,6 +209,19 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         //Wire up the stream importer
 
 
+    }
+
+    protected FaviconResource createFaviconResource() {
+        String faviconPath = getFaviconPath();
+        return new FaviconResource(faviconPath);
+    }
+
+    /**
+     * Override this method to provide a custom path for the favicon.
+     * @return
+     */
+    protected String getFaviconPath() {
+        return "/static/favicon.ico"; // Standard path
     }
 
     private void initAuditTrail() {
