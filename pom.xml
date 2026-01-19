@@ -54,7 +54,7 @@
     <dependency>
       <groupId>no.cantara.realestate</groupId>
       <artifactId>azure-client-java</artifactId>
-      <version>0.7.0</version>
+      <version>0.8.0</version>
     </dependency>
 
     <dependency>
