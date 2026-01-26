@@ -95,7 +95,7 @@ public class AuditResource {
             Instant lastUpdated = auditState.getLastObservedTimestamp();
 
             html.append("<tr>")
-                    .append("<td><a href=\"./"+sensorId +"\">"+sensorId +"</a></td>")
+                    .append("<td><a href=\""+sensorId +"\">"+sensorId +"</a></td>")
                     .append("<td>").append(lastUpdated).append("</td>")
                     .append("</tr>");
         }
