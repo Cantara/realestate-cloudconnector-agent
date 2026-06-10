@@ -2,7 +2,6 @@ package no.cantara.realestate.cloudconnector;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.health.HealthCheck;
 import no.cantara.config.ApplicationProperties;
 import no.cantara.realestate.azure.AzureObservationDistributionClient;
 import no.cantara.realestate.cloudconnector.audit.AuditResource;
@@ -657,6 +656,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofFailedDistributed", service::getNumberOfMessagesFailed);
         get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-numberofMessagesInQueue", service::getNumberOfMessagesInQueue);
         get(StingrayHealthService.class).registerHealthProbe(service.getName() + "-whenLastMessageDistributed", service::getWhenLastMessageDistributed);
+        /* TODO The error text might not be correct, and isHealthy is duplicated.
         get(StingrayHealthService.class).registerHealthCheck(service.getName() + "-isHealthy:", new HealthCheck() {
             @Override
             protected Result check() throws Exception {
@@ -667,6 +667,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
                 }
             }
         });
+        */
     }
 
     protected RecRepository createRecRepository(boolean useSimulatedSensors) {
