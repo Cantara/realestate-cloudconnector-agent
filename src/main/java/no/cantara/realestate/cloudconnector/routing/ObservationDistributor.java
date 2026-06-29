@@ -2,6 +2,8 @@ package no.cantara.realestate.cloudconnector.routing;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import no.cantara.realestate.ExceptionStatusType;
+import no.cantara.realestate.MqttUnavailableException;
 import no.cantara.realestate.RealEstateException;
 import no.cantara.realestate.azure.AzureObservationDistributionClient;
 import no.cantara.realestate.cloudconnector.audit.AuditTrail;
@@ -28,7 +30,7 @@ public class ObservationDistributor implements Runnable {
     private AzureObservationDistributionClient azureObservationsClient = null;
     private ObservationDistributionServiceStub observationDistributionServiceStub = null;
     private AuditTrail auditTrail = null;
-//    private final MappedIdRepository mappedIdRepository;
+    //    private final MappedIdRepository mappedIdRepository;
     private final RecRepository recRepository;
     private static final long DEFAULT_SLEEP_PERIOD_MS = 100;
     private long sleepPeriod;
@@ -79,6 +81,22 @@ public class ObservationDistributor implements Runnable {
                     addSemanticsAndDistribute(observedValue);
                 }
                 Thread.sleep(sleepPeriod);
+            } catch (MqttUnavailableException mue) {
+                this.setHealthy(false);
+                log.warn("Mqtt connection is unstable.", mue);
+                Enum<ExceptionStatusType> exceptionStatus = mue.getStatusType();
+                switch (exceptionStatus) {
+                    case ExceptionStatusType.connection_error,
+                         ExceptionStatusType.RETRY_NOT_POSSIBLE:
+                        log.error("Failed to distribute observedValue due to Mqtt connection error. Will close connection. Re-connect is needed.", mue);
+                        azureObservationsClient.closeConnection();
+                        break;
+                    default:
+                        log.error("Mqtt connection is in an unknown state: {}. Will throw error outwards", exceptionStatus);
+                        throw mue;
+                }
+                log.error("Failed to distribute observedValue due to Mqtt connection error. Will throw error outwards.", mue);
+                throw mue;
             } catch (RealEstateException e) {
                 this.setHealthy(false);
                 log.warn("Failed to distribute observedValue", e);
@@ -94,7 +112,6 @@ public class ObservationDistributor implements Runnable {
     }
 
 
-
     protected void addSemanticsAndDistribute(ObservedValue observedValue) {
         if (observedValue == null) {
             log.trace("ObservedValue is null, skipping distribution");
@@ -102,12 +119,12 @@ public class ObservationDistributor implements Runnable {
         }
         log.trace("Fetched observedValue {} from the queue", observedValue);
 
-        auditLog.trace("Distribute__Observed__{}__{}__{}__{}__{}", observedValue.getClass(), observedValue.getSensorId().getId(), observedValue.getSensorId().getId(),observedValue.getValue(), observedValue.getObservedAt());
+        auditLog.trace("Distribute__Observed__{}__{}__{}__{}__{}", observedValue.getClass(), observedValue.getSensorId().getId(), observedValue.getSensorId().getId(), observedValue.getValue(), observedValue.getObservedAt());
 
         SensorId sensorId = observedValue.getSensorId();
         if (sensorId != null) {
             String twinId = sensorId.getTwinId();
-            auditTrail.logObservationFetchedFromQueue(twinId,"");
+            auditTrail.logObservationFetchedFromQueue(twinId, "");
         }
         RecTags recTags = recRepository.getRecTagsBySensorId(sensorId);
         ObservationMessage observationMessage = null;
@@ -120,7 +137,19 @@ public class ObservationDistributor implements Runnable {
         }
 //        AzureObservationDistributionClient azureObservationsClient = new AzureObservationDistributionClient();
         if (azureObservationsClient != null) {
-            azureObservationsClient.publish(observationMessage);
+            //FIXME #427  when publish is throwing RealEstateException the connection to Azure might be in error state
+            //eg isTrottled, notConnected, isStopped, or throws exceptions
+            try {
+                azureObservationsClient.publish(observationMessage);
+            } catch (MqttUnavailableException mue) {
+                log.error("Failed to publish observationMessage to AzureObservationDistributionClient. Reason: {}", mue.getMessage(), mue);
+                setHealthy(false);
+                throw mue;
+            } catch (RealEstateException ree) {
+                log.error("Failed to publish observationMessage to AzureObservationDistributionClient. Reason: {}", ree.getMessage(), ree);
+                setHealthy(false);
+                throw ree;
+            }
         }
         if (observationDistributionServiceStub != null) {
             observationDistributionServiceStub.publish(observationMessage);
