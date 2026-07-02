@@ -25,6 +25,7 @@ import no.cantara.realestate.cloudconnector.simulators.ingestion.SimulatorTrends
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedCo2Sensor;
 import no.cantara.realestate.cloudconnector.simulators.sensors.SimulatedTempSensor;
 import no.cantara.realestate.cloudconnector.status.*;
+import no.cantara.realestate.cloudconnector.utils.LogbackConfigLoader;
 import no.cantara.realestate.distribution.ObservationDistributionClient;
 import no.cantara.realestate.metrics.MetricsDistributionClient;
 import no.cantara.realestate.observations.ObservationListener;
@@ -51,7 +52,7 @@ import java.util.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class RealestateCloudconnectorApplication extends AbstractStingrayApplication<RealestateCloudconnectorApplication> {
-    private static final Logger log = getLogger(RealestateCloudconnectorApplication.class);
+    private static Logger log = getLogger(RealestateCloudconnectorApplication.class);
     public static final Logger auditLog = getLogger("AuditLog");
     private boolean enableStream;
     private boolean enableScheduledImport;
@@ -86,6 +87,10 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
 
     public static void main(String[] args) {
+        //Example of using local override when application is deployed.
+        String externalConfigPath = "./logback_override.xml";
+        LogbackConfigLoader.loadExternalConfig(externalConfigPath);
+        log = getLogger(RealestateCloudconnectorApplication.class);
         ApplicationProperties config = new RealestateCloudconnectorApplicationFactory()
                 .conventions(ApplicationProperties.builder())
                 .buildAndSetStaticSingleton();
