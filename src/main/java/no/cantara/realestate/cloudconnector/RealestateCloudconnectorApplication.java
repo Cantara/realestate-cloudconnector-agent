@@ -638,6 +638,17 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
         observationDistributor = new ObservationDistributor(observationsRepository, distributionServices, recRepository, metricRegistry, auditTrail);
         get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy", observationDistributor::isHealthy);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed", observationDistributor::getObservedValueDistributedCount);
+        get(StingrayHealthService.class).registerHealthCheck("ObservationDistributor-isHealthy", new HealthCheck() {
+            @Override
+            protected Result check() throws Exception {
+                if (observationDistributor.isHealthy()) {
+                    return Result.healthy();
+                } else {
+                    notificationService.sendWarning("ObservationDistributor","ObservationDistributor is not healthy. Reason might be due to connection error, or max daily quota.");
+                    return Result.unhealthy("ObservationDistributor is not healthy. Reason might be due to connection error, or max daily quota.");
+                }
+            }
+        });
         observationDistributorThread = new Thread(observationDistributor);
         observationDistributorThread.start();
         log.trace("Started ObservationDistributor thread");
@@ -669,7 +680,7 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
                 if (service.isHealthy()) {
                     return Result.healthy();
                 } else {
-                    return Result.unhealthy(service.getName() + " Distribution failed due to conenction eroor.");
+                    return Result.unhealthy(service.getName() + " Distribution failed. Reason might be due to connection error, or max daily quota.");
                 }
             }
         });
