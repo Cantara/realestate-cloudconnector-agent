@@ -15,6 +15,7 @@ import no.cantara.realestate.cloudconnector.observations.ScheduledObservationMes
 import no.cantara.realestate.cloudconnector.rec.RecRepositoryInMemory;
 import no.cantara.realestate.cloudconnector.routing.MessageRouter;
 import no.cantara.realestate.cloudconnector.routing.ObservationDistributor;
+import no.cantara.realestate.cloudconnector.routing.ObservationDistributorHealthCheck;
 import no.cantara.realestate.cloudconnector.routing.ObservationsRepository;
 import no.cantara.realestate.cloudconnector.sensorid.InMemorySensorIdRepository;
 import no.cantara.realestate.cloudconnector.sensorid.SensorIdRepository;
@@ -636,19 +637,14 @@ public class RealestateCloudconnectorApplication extends AbstractStingrayApplica
 
 
         observationDistributor = new ObservationDistributor(observationsRepository, distributionServices, recRepository, metricRegistry, auditTrail);
-        get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-isHealthy", observationDistributor::isHealthy);
+        // Probes and checks share one JSON object in StingrayHealthService, and probes are written
+        // last. A probe with the same key as a check therefore overwrites the check's UP/DOWN, so the
+        // probes below use keys of their own and expose the two inputs the check derives from.
+        get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-threadAlive", observationDistributor::isLoopAlive);
+        get(StingrayHealthService.class).registerHealthProbe("ObservationDistributor-handoffFaulted", observationDistributor::isHandoffFaulted);
         get(StingrayHealthService.class).registerHealthProbe("ObservationsRepository-ObservedValues-distributed", observationDistributor::getObservedValueDistributedCount);
-        get(StingrayHealthService.class).registerHealthCheck("ObservationDistributor-isHealthy", new HealthCheck() {
-            @Override
-            protected Result check() throws Exception {
-                if (observationDistributor.isHealthy()) {
-                    return Result.healthy();
-                } else {
-                    notificationService.sendWarning("ObservationDistributor","ObservationDistributor is not healthy. Reason might be due to connection error, or max daily quota.");
-                    return Result.unhealthy("ObservationDistributor is not healthy. Reason might be due to connection error, or max daily quota.");
-                }
-            }
-        });
+        get(StingrayHealthService.class).registerHealthCheck("ObservationDistributor-isHealthy",
+                new ObservationDistributorHealthCheck(observationDistributor, notificationService));
         observationDistributorThread = new Thread(observationDistributor);
         observationDistributorThread.start();
         log.trace("Started ObservationDistributor thread");

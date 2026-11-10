@@ -79,6 +79,29 @@ public class ObservationsRepository implements ObservationListener {
         return hasObservations;
     }
 
+    /**
+     * Hand an observation back to the head of the queue after a distribution attempt that may
+     * succeed on retry (the connection was not established yet). It goes in front of anything that
+     * arrived in the meantime, so per-sensor ordering survives the retry.
+     *
+     * <p>Never blocks: if the queue filled up while the attempt was in flight, the observation is
+     * dropped and {@code false} is returned, and the caller decides what to log. Blocking here
+     * would stall the distributor thread, which is the only consumer of the queue.
+     *
+     * @param observedValue the observation that was taken with {@link #takeFirstObservedValue()}
+     * @return {@code true} if it is back at the head of the queue, {@code false} if the queue is full
+     */
+    public boolean requeueFirst(ObservedValue observedValue) {
+        if (observedValue == null) {
+            return false;
+        }
+        boolean requeued = observedValuesQueue.offerFirst(observedValue);
+        if (!requeued) {
+            log.warn("Queue is full ({} observations). Dropping {} instead of requeueing it.", observedValuesQueue.size(), observedValue);
+        }
+        return requeued;
+    }
+
     public ObservedValue takeFirstObservedValue() {
         try {
             ObservedValue observedValue = observedValuesQueue.poll(1,TimeUnit.MILLISECONDS);
